@@ -1,186 +1,357 @@
-Kiln Controller
-==========
+# Kiln Controller
 
-Tamir's Orange Pi Zero 2W kiln controller, with a customized dashboard, firing
-history, electricity cost accounting, and settings interface. Based on
-[jbruce12000/kiln-controller](https://github.com/jbruce12000/kiln-controller), with
-the upstream history, attribution, and GPL license retained.
+Tamir's web-based electric kiln controller for the **Orange Pi Zero 2W**: live temperature control,
+editable programs, durable firing history, electricity cost estimates, and browser-based settings.
 
-Historical deployment records cover the [Orange Pi setup](docs/ORANGE-PI-SETUP.md),
-[relay module](docs/RELAY-MODULE-CHANGE.md), and [interface updates](docs/UI-UPDATE.md).
-Deployment-specific settings, firing records, and verification screenshots remain
-local. Live overrides in `settings.json` and `settings.pending.json` are not
-committed: the tracked source defaults use `gpio_heat_invert=False` and a two-second
-control cycle, while the documented deployment uses active-low output and a
-30-second cycle. Review the hardware configuration and required overrides before
-running on a kiln.
+[Installation](#installation) · [Dashboard](#dashboard-and-programs) · [Firing history](#firing-history) ·
+[Settings](#settings) · [Recovery](#control-and-power-loss-recovery) · [API](#api-and-diagnostics) ·
+[Backups](#data-backups-and-updates)
 
-Turns a Raspberry Pi into an inexpensive, web-enabled kiln controller.
+![Current kiln dashboard showing the firing program and live measurements](docs/images/dashboard.png)
 
-## Features
+Screenshots were captured from the real running controller on **4 October 2026**. Readings change during
+a firing, and this installation's local configuration differs from the repository defaults.
 
-  * supports [many boards](https://github.com/jbruce12000/kiln-controller/blob/main/docs/supported-boards.md) into addition to raspberry pi
-  * supports Adafruit MAX31856 and MAX31855 thermocouple boards
-  * support for K, J, N, R, S, T, E, or B type thermocouples
-  * easy to create new kiln schedules and edit / modify existing schedules
-  * no limit to runtime - fire for days if you want
-  * view status from multiple devices at once - computer, tablet etc
-  * real-time firing cost estimate
-  * real-time heating rate displayed in degrees per hour
-  * supports PID parameters you tune to your kiln
-  * monitors temperature in kiln after schedule has ended
-  * api for starting and stopping at any point in a schedule
-  * accurate simulation
-  * support for shifting schedule when kiln cannot heat quickly enough
-  * support for skipping first part of profile to match current kiln temperature
-  * prevents integral wind-up when temperatures not near the set point
-  * automatic restarts if there is a power outage or other event
-  * support for a watcher to page you via slack if you kiln is out of whack
-  * easy scheduling of future kiln runs
+## Installation
 
+**Start with the [Orange Pi installation guide](docs/INSTALL.md).** It covers the OS, GPIO, Python dependencies,
+simulation, wiring, settings, service, commissioning, testing, backups, and updates.
 
-**Run Kiln Schedule**
+> Keep kiln mains isolated while configuring and checking the output. The tracked
+> defaults select **real hardware**, an **active-high output**, and a **two-second
+> control cycle**. Verify the actual driver polarity before starting a controller
+> or service. Use an independent over-temperature cutoff and appropriate mains
+> protection; software cannot disconnect a failed-closed SSR.
 
-![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/kiln-running.png)
+The target is an Orange Pi Zero 2W running Debian 12 with Python 3.11. This fork uses its H616-compatible GPIO
+mapping and Orange Pi pin choices; other boards require configuration and compatibility work.
 
-**Edit Kiln Schedule**
+1. Prepare Debian, install the distro GPIO bindings, and configure the `gpio`
+   group, Chrony, and Avahi as described in the guide.
+2. Clone [tamirgold/kiln-controller](https://github.com/tamirgold/kiln-controller)
+   on the Orange Pi. The repository is private, so authenticate with GitHub first:
 
-![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/kiln-schedule.png)
+   ```bash
+   cd /home/orangepi
+   git clone git@github.com:tamirgold/kiln-controller.git
+   cd kiln-controller
+   ```
 
-## Hardware
+3. Create a virtual environment with system site packages. Follow the guide's
+   dependency command, which omits Raspberry Pi's `RPi.GPIO` and uses the recorded
+   working Blinka version with the distro's `gpiod` bindings.
+4. Preview in simulation using a separate state file and port. This disables
+   hardware heating, but imports still require the compatible Linux GPIO setup.
+5. With mains isolated, verify wiring, sensor readings, output polarity, power,
+   tariff, temperature limits, and PID configuration. Create local overrides.
+6. Install the supplied systemd service, then commission real operation. The
+   guide provides an initial simulation configuration for the documented relay.
+7. Run the tests and verify idle state, fresh sensor data, and expected settings
+   before starting a real firing.
 
-### Parts
+The service expects `/home/orangepi/kiln-controller` and account `orangepi`; adjust it for other paths.
+In a fresh clone, `config.py` and `kiln-controller.py` are at the root. Use the guide instead of `start-on-boot`.
 
-| Image | Hardware | Description |
-| ------| -------- | ----------- |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/rpi.png) | [Raspberry Pi](https://www.adafruit.com/category/105) | Virtually any Raspberry Pi will work since only a few GPIO pins are being used. Any board supported by [blinka](https://circuitpython.org/blinka) and has SPI should work. You'll also want to make sure the board has wifi. If you use something other than a Raspberry PI and get it to work, let me know. |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/max31855.png) | [Adafruit MAX31855](https://www.adafruit.com/product/269) or [Adafruit MAX31856](https://www.adafruit.com/product/3263) | Thermocouple breakout board |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/k-type-thermocouple.png) | [Thermocouple](https://www.auberins.com/index.php?main_page=product_info&cPath=20_3&products_id=39) | Invest in a heavy duty, ceramic thermocouple designed for kilns. Make sure the type will work with your thermocouple board. Adafruit-MAX31855 works only with K-type. Adafruit-MAX31856 is flexible and works with many types, but folks usually pick S-type. |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/breadboard.png) | Breadboard | breadboard, ribbon cable, connector for pi's gpio pins & connecting wires |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/ssr.png) | Solid State Relay | Zero crossing, make sure it can handle the max current of your kiln. Even if the kiln is 220V you can buy a single [3 Phase SSR](https://www.auberins.com/index.php?main_page=product_info&cPath=2_30&products_id=331). It's like having 3 SSRs in one.  Relays this big always require a heat sink. |
-| ![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/ks-1018.png) | Electric Kiln | There are many old electric kilns on the market that don't have digital controls. You can pick one up on the used market cheaply.  This controller will work with 110V or 220V (pick a proper SSR). My kiln is a Skutt KS-1018. |
+### Open the system
 
-### Schematic
+These addresses work on the installation's local network. Substitute the board's IP address if `.local` name
+resolution is unavailable.
 
-The pi has three gpio pins connected to the MAX31855 chip. D0 is configured as an input and CS and CLK are outputs. The signal that controls the solid state relay starts as a gpio output which drives a transistor acting as a switch in front of it. This transistor provides 5V and plenty of current to control the ssr. Since only four gpio pins are in use, any pi can be used for this project. See the [config](https://github.com/jbruce12000/kiln-controller/blob/main/config.py) file for gpio pin configuration.
+| Page | Current system | Route |
+| --- | --- | --- |
+| Dashboard | [Firing overview](http://orangepizero2w.local:8081/picoreflow/index.html) | `/picoreflow/index.html` |
+| History | [Firing records](http://orangepizero2w.local:8081/picoreflow/history.html) | `/picoreflow/history.html` |
+| Settings | [Controller settings](http://orangepizero2w.local:8081/picoreflow/settings.html) | `/picoreflow/settings.html` |
+| Diagnostics | [PID diagnostics](http://orangepizero2w.local:8081/state) | `/state` |
 
-My controller plugs into the wall, and the kiln plugs into the controller. 
+The root URL redirects to the dashboard. The HTTP server has no user login or TLS; keep it on a trusted local
+network and do not expose its port directly to the Internet.
 
-**WARNING** This project involves high voltages and high currents. Please make sure that anything you build conforms to local electrical codes and aligns with industry best practices.
+### Source defaults and photographed installation
 
-**Note:** The GPIO configuration in this schematic does not match the defaults, check [config](https://github.com/jbruce12000/kiln-controller/blob/main/config.py) and make sure the gpio pin configuration aligns with your actual connections.
+`config.py` supplies defaults; local `settings.json` overrides them. The values
+below were checked against the running system on 4 October 2026.
 
-![Image](https://github.com/jbruce12000/kiln-controller/blob/main/public/assets/images/schematic.png)
+| Setting | Tracked default | Current installation |
+| --- | --- | --- |
+| Operating mode | Real hardware | Real hardware |
+| Installed heating power | 11 kW | 8 kW |
+| Tariff and currency | ₪0.645/kWh | ₪0.645/kWh |
+| Temperature units | Celsius | Celsius |
+| Converter / thermocouple | MAX31855 / K | MAX31855 / K |
+| Control cycle | 2 seconds | 30 seconds |
+| Output polarity (`gpio_heat_invert`) | `false`: active high | `true`: active low |
+| Automatic recovery window | 15 minutes | 25 minutes |
+| Over-temperature limit | 1240°C | 1240°C |
 
-*Note: I tried to power my ssr directly using a gpio pin, but it did not work. My ssr required 25ma to switch and rpi's gpio could only provide 16ma. YMMV.*
+These are installation values, not recommended settings for every kiln. The [installation
+guide](docs/INSTALL.md#5-set-local-hardware-configuration) includes physical pin assignments and commissioning
+checks. The dated [relay wiring record](docs/RELAY-MODULE-CHANGE.md) describes this installation's relay
+module and pull-up; verify your own hardware before using that wiring.
 
-## Software 
+## Dashboard and programs
 
-### Raspberry PI OS
+- See measured and target temperature, requested heater duty, approximate kW,
+  sensor status, heating/cooling rate, and the current ramp, hold, or cooling phase.
+- Track elapsed firing time separately from program progress. Elapsed time includes
+  pauses and catch-up; program time left is not an exact finish-time prediction.
+- Switch between the whole **Program** and **Live · 30 min** charts. Inspect points
+  with a mouse, touch, or arrow keys, and export available readings as CSV.
+- Reconnect automatically after a lost browser connection. The controller keeps
+  operating; connection and sensor warnings identify unavailable readings.
+- Recover the current firing's saved curve when reopening the dashboard. Live
+  status updates at least every two seconds under normal operation; long browser
+  curves are down-sampled while durable history retains its saved samples.
 
-Download [Raspberry PI OS](https://www.raspberrypi.org/software/). Use Rasberry PI Imaging tool to install the OS on an SD card. Boot the OS, open a terminal and...
+<details><summary>Current dashboard in Live · 30 min view</summary>
 
-    $ sudo apt-get update
-    $ sudo apt-get dist-upgrade
-    $ git clone https://github.com/tamirgold/kiln-controller
-    $ cd kiln-controller
-    $ python3 -m venv venv
-    $ source venv/bin/activate
-    $ pip install -r requirements.txt
+![Dashboard with the live thirty-minute temperature chart](docs/images/dashboard-live.png)
 
-*Note: The above steps work on ubuntu if you prefer*
+</details>
 
-### Raspberry PI deployment
+### Create and run a program
 
-If you're done playing around with simulations and want to deploy the code on a Raspberry PI to control a kiln, you'll need to do this in addition to the stuff listed above:
+1. Choose **New program**, or select an existing program and choose **Edit program**.
+2. Give it a name and enter cumulative times and target temperatures. Start at
+   time zero and use increasing times; two equal temperatures create a hold.
+3. Enter a ramp rate to calculate that segment's duration and shift later points.
+   Heating rates are positive, cooling rates negative; set hold duration with time.
+4. Review the curve, total duration, peak temperature, and schedule table, then save.
+5. With a ready sensor and idle kiln, choose **Start program** and confirm the
+   program, scheduled duration, and peak. **Stop firing** switches heating off
+   and cancels automatic recovery of that firing; cooling is passive.
 
-    $ sudo raspi-config
-    interfacing options -> SPI -> Select Yes to enable
-    select reboot
+The editor supports seconds, minutes, or hours and configurable rate units. Targets cannot exceed the
+configured temperature limit. Saved heating-capacity measurements warn about ambitious ramps without
+preventing a save; unmeasured temperature ranges are identified separately.
 
-## Configuration
+![Program editor with cumulative times, temperatures, and ramp rates](docs/images/program-editor.png)
 
-All parameters are defined in config.py. You need to read through config.py carefully to understand each setting. Here are some of the most important settings:
+You can add and remove points, save changes, and delete unused programs. Edits to an active program apply to
+future firings; the current firing keeps its original schedule. Its program cannot be deleted in the editor.
+Changing a program's name saves another program, leaving the original available.
 
-| Variable | Default | Description |
-| -------- | ------- | ----------- |
-| sensor_time_wait | 2 seconds | It's the duty cycle for the entire system.  It's set to two seconds by default which means that a decision is made every 2s about whether to turn on relay[s] and for how long. If you use mechanical relays, you may want to increase this. At 2s, my SSR switches 11,000 times in 13 hours. |
-| temp_scale | f | f for farenheit, c for celcius |
-| pid parameters | | Used to tune your kiln. See PID Tuning. |
-| simulate | True | Simulate a kiln. Used to test the software by new users so they can check out the features. |
- 
+### Electricity and energy
 
-## Testing
+The dashboard shows the current firing's estimated cost, energy, and heater on-time, then its final totals
+when the kiln becomes idle. Accounting uses:
 
-After you've completed connecting all the hardware together, there are scripts to test the thermocouple and to test the output to the solid state relay. Read the scripts below and then start your testing. First, activate the virtual environment like so...
+**Energy (kWh) = installed power (kW) × heater on-hours**
 
-     $ source venv/bin/activate
+**Cost = energy × electricity tariff**
 
-then test the thermocouple with:
+For the photographed 8 kW kiln, one hour of heater on-time costs **₪5.16** at ₪0.645/kWh. Off-time adds no
+energy; an hour of elapsed firing time may include many off periods. Accounting follows actual
+controller-output on-time, including a pulse in progress, and preserves totals across eligible recovery.
 
-     $ ./test-thermocouple.py
+This is a rated-power estimate, not a mains meter. The heater percentage is the PID's requested duty, not
+confirmation that relay contacts or elements are on. Partial totals and earlier values reconstructed from logs
+are labeled explicitly.
 
-then test the output with:
+## Firing history
 
-     $ ./test-output.py
+Each firing retains its program snapshot, measured/target curve, result, duration, peak temperature, heater
+on-time, energy, and cost. Records survive controller restarts; an eligible recovery continues the same firing
+record.
 
-and you can use this script to examine each pin's state including input/output/voltage on your board:
+![Firing history with summary statistics, saved records, and measured ramp rates](docs/images/history.png)
 
-     $ ./gpioreadall.py
+- Summary averages cover **ended firings**, including stopped and interrupted
+  runs; running and paused firings are excluded. Costs keep currencies separate.
+- Open a record for its curve, average temperature, average target error, catch-up
+  time, sample count, and data-quality notes. Gaps remain visible and are excluded
+  from temperature averages and heating-capacity measurements.
+- Export the statistics overview as JSON or an individual firing as JSON or CSV.
+  History CSV temperatures are stored in Celsius regardless of display units.
+- **Clear history** reviews and removes ended records and recalculates statistics.
+  Saved programs and running/paused firings are kept. Export records before clearing.
+- Real and simulated firings have separate archives and statistics.
 
-## PID Tuning
+![Selected firing with detailed statistics and recorded temperature curve](docs/images/history-detail.png)
 
-Run the [autotuner](https://github.com/jbruce12000/kiln-controller/blob/main/docs/ziegler_tuning.md). It will heat your kiln to 400F, pass that, and then once it cools back down to 400F, it will calculate PID values which you must copy into config.py. No tuning is perfect across a wide temperature range. Here is a [PID Tuning Guide](https://github.com/jbruce12000/kiln-controller/blob/main/docs/pid_tuning.md) if you end up having to manually tune.
+### Learn the kiln's heating capacity
 
-There is a state view that can help with tuning. It shows the P,I, and D parameters over time plus allows for a csv dump of data collected. It also shows lots of other details that might help with troubleshooting issues. Go to /state.
+History measures the fastest sustained three-minute rise at at least 90% heater duty within each 50°C band. It
+excludes cooling, low-power holds, interrupted readings, and unsuitable samples. Measurements from matching
+installed power feed the program editor's ramp warnings.
 
-## Usage
+These are observed capabilities, not guaranteed limits: load, element condition, and supply voltage affect
+performance. Ranges without qualifying measurements remain unknown. This feature guides program editing; it
+does not automatically retune PID gains or rewrite schedules.
 
-### Server Startup
+## Settings
 
-    $ source venv/bin/activate; ./kiln-controller.py
+The settings screen exposes **59 settings: 56 editable and 3 read-only legacy values**. Search across
+categories, show technical names, and export a JSON copy. Service-enforced fields can also appear read-only.
 
-### Autostart Server onBoot
-If you want the server to autostart on boot, run the following command:
+1. Edit values in any category, then choose **Review & save** to inspect before/after
+   values. Saving creates pending settings and leaves the running firing unchanged.
+2. When the kiln is idle with no eligible recovery waiting, choose **Apply & restart**.
+   The controller backs up the current settings, activates the saved values, and
+   restarts through systemd. A directly launched process must be relaunched manually.
+3. Use **Discard changes** to discard the local draft or review discarding pending
+   settings. Concurrent-editor checks prevent silently overwriting another session.
 
-    $ /home/pi/kiln-controller/start-on-boot
+Changing Celsius/Fahrenheit in the UI converts temperature limits, offsets, the PID window, and PID gains.
+Programs are converted when loaded. Validation checks sensor selection, distinct GPIO pins, sampling
+intervals, limits, and storage paths.
 
-### Client Access
+| Category | Fields | What it controls |
+| --- | ---: | --- |
+| Electricity & display | 6 | Installed power, tariff, currency, temperature/time/rate units |
+| Firing behavior | 5 | Warm-start seek, catch-up, cycle length, low-temperature throttle |
+| PID control | 4 | Kp, inverse Ki, Kd, control window |
+| Sensor & wiring | 12 | Calibration, sampling, converter/type/filter, GPIO pins, polarity |
+| Power-loss recovery | 3 | Enable recovery, maximum delay, clock synchronization |
+| Protection overrides | 13 | Temperature limit and individual fault overrides |
+| Server & storage | 5 | Port, logging level/format, recovery file, program directory |
+| Simulation | 8 | Mode, ambient temperature, thermal model, speed multiplier |
+| Compatibility | 3 | Unused cooling/airflow parameters and deprecated windup flag |
 
-Click http://127.0.0.1:8081 for local development or the IP
-of your PI and the port defined in config.py (default 8081).
+![Settings: electricity and display](docs/images/settings-general.png)
 
-### Simulation
+<details><summary>Firing behavior</summary>
 
-In config.py, set **simulate=True**. Start the server and select a profile and click Start. Simulations run at near real time.
+![Settings: firing behavior](docs/images/settings-firing.png)
 
-### Scheduling a Kiln run
+</details>
 
-If you want to schedule a kiln run to start in the future. Here are [examples](https://github.com/jbruce12000/kiln-controller/blob/main/docs/scheduling.md).
+<details><summary>PID control</summary>
 
-### Watcher
+![Settings: PID control](docs/images/settings-pid.png)
 
-If you're busy and do not want to sit around watching the web interface for problems, there is a watcher.py script which you can run on any machine in your local network or even on the raspberry pi which will watch the kiln-controller process to make sure it is running a schedule, and staying within a pre-defined temperature range. When things go bad, it sends messages to a slack channel you define. I have alerts set on my android phone for that specific slack channel. Here are detailed [instructions](https://github.com/jbruce12000/kiln-controller/blob/main/docs/watcher.md).
+</details>
 
-## License
+<details><summary>Sensor & wiring</summary>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+![Settings: sensor and wiring](docs/images/settings-sensor.png)
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+</details>
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+<details><summary>Power-loss recovery</summary>
 
-## Support & Contact
+![Settings: power-loss recovery](docs/images/settings-recovery.png)
 
-Please use the issue tracker for project related issues.
-If you're having trouble with hardware, I did too.  Here is a [troubleshooting guide](https://github.com/jbruce12000/kiln-controller/blob/main/docs/troubleshooting.md) I created for testing RPi gpio pins.
+</details>
 
-## Origin
-This project was originally forked from https://github.com/apollo-ng/picoReflow but has diverged a large amount.
+<details><summary>Protection overrides</summary>
+
+![Settings: protection overrides](docs/images/settings-protection.png)
+
+</details>
+
+<details><summary>Server & storage</summary>
+
+![Settings: server and storage](docs/images/settings-system.png)
+
+</details>
+
+<details><summary>Simulation</summary>
+
+![Settings: simulation](docs/images/settings-simulation.png)
+
+</details>
+
+<details><summary>Compatibility</summary>
+
+![Settings: read-only compatibility values](docs/images/settings-legacy.png)
+
+</details>
+
+## Control and power-loss recovery
+
+The controller supports MAX31855 with type K, or MAX31856 with B/E/J/K/N/R/S/T thermocouples. It uses median
+sampling, requires fresh valid readings before heating, and supports over-temperature and sensor-fault
+shutdown. Keep fault overrides disabled for normal operation. MAX31856's configurable 50 Hz filter does not
+apply to MAX31855.
+
+PID regulates heater duty inside its control window, with automatic integral windup protection outside that
+window. Optional catch-up holds program progress while the kiln is too far from target. Warm-start seek can
+skip initial schedule points when starting with a warm kiln. Low-temperature throttling limits requested power
+outside the PID window when the target is below its threshold.
+
+Automatic recovery restores saved program progress after an eligible interruption. It requires a recent valid
+**RUNNING** record, matching mode and units, valid schedule progress, a ready sensor, and synchronized Chrony
+time when configured. Outage time does not advance the program or accrue energy. Paused, stopped, completed,
+expired, corrupt, and mismatched records do not automatically resume.
+
+**Stop firing** cancels recovery. Restarting the service during a firing preserves progress and may allow
+recovery, so it is not equivalent to stopping the firing. The service and controller attempt to switch the
+heat request off on exit; an uncaught controller-thread fault also stops output.
+
+Simulation provides an adjustable thermal model and speed multiplier, without hardware heating. See the
+installation guide for an isolated preview state/port. Its results are kept separate from real firings and are
+not calibration evidence.
+
+## API and diagnostics
+
+| Interface | Purpose |
+| --- | --- |
+| `GET /api/health` | Current state, sensor readiness, energy, controller liveness |
+| `GET /api/stats` | PID statistics |
+| `POST /api` | `run`, `stop`, `pause`, `resume`, `memo`, or `stats` command |
+| `GET /api/firings` | Firing records and aggregate statistics |
+| `GET /api/firings/<id>` | Individual record and samples as JSON |
+| `GET /api/firings/<id>?format=csv` | Individual samples as CSV |
+| `POST /api/firings/clear` | Confirmed clearing of reviewed ended records |
+| `GET /api/settings`, `POST /api/settings` | Read settings or save pending values |
+| `POST /api/settings/discard`, `POST /api/settings/apply` | Discard pending values or apply/restart |
+| WebSockets `/status`, `/config`, `/storage`, `/control` | Live updates, display configuration, program storage, legacy control |
+
+The command API accepts JSON; `run` takes a saved `profile` name and optional `startat` in **minutes**. A
+positive `startat` bypasses warm-start seek. API **pause maintains temperature and can continue heating**;
+pause/resume are not dashboard buttons. Settings/history mutations require their current review token and
+revision; those checks do not provide user authentication.
+
+The [diagnostics view](public/state.html) plots temperature, error, duty, and PID terms and offers a CSV dump.
+It loads its plotting/table libraries from cdnjs; the dashboard, history, and settings assets are served
+locally.
+
+Optional tools include [PID autotuning](docs/ziegler_tuning.md), [manual tuning notes](docs/pid_tuning.md),
+the separately configured [Slack watcher](docs/watcher.md), and [OS-based scheduling with
+`at`](docs/schedule.md). These are separate tools, not dashboard features. Review their scripts and dated
+examples before use; sensor/output tests and autotuning can access real hardware.
+
+## Data, backups, and updates
+
+| Path | Contents |
+| --- | --- |
+| `config.py` | Tracked base configuration |
+| `settings.json`, `settings.pending.json` | Applied local overrides and saved pending changes |
+| `storage/settings-backups/` | Settings snapshot saved before each apply |
+| `storage/profiles/` | Saved program JSON files, including explicit temperature units |
+| `state.json` | Atomic recovery state and last firing totals when saved |
+| `storage/firings/` | Real firing records, `samples.jsonl`, and per-firing summaries |
+| `storage/simulated-firings/` | Separate simulated records and summaries |
+
+These are default paths; Settings can relocate the recovery file and program directory. `KILN_SETTINGS_FILE`,
+`KILN_STATE_FILE`, `KILN_PORT`, and `KILN_SIMULATE` provide service/preview overrides. Environment-selected
+mode, port, and recovery path are locked in Settings.
+
+Back up local settings, recovery state, and all of `storage/`; Git is not a backup of the installation's
+runtime data. Firing samples are normally saved every ten seconds, with summaries refreshed periodically and
+at important transitions. Perform updates only while idle, following the guide's [backup and update
+procedure](docs/INSTALL.md#8-back-up-and-update).
+
+Run the tests in the configured Linux environment with an isolated settings path,
+so local deployment overrides do not change the expected test defaults:
+
+```bash
+kiln_test_dir="$(mktemp -d)"
+KILN_SIMULATE=1 KILN_SETTINGS_FILE="$kiln_test_dir/settings.json" \
+  venv/bin/python -m pytest -q Test
+```
+
+Tests cover program interpolation, recovery, energy accounting, staged settings, and firing history.
+Imports require compatible GPIO dependencies; software tests do not verify wiring, calibration, or kiln tuning.
+
+## Project history and license
+
+This repository is based on [jbruce12000/kiln-controller](https://github.com/jbruce12000/kiln-controller),
+which originated from [apollo-ng/picoReflow](https://github.com/apollo-ng/picoReflow). The original history
+and attribution are retained alongside the Orange Pi support, new interface, persistent history, energy
+accounting, and settings work.
+
+Licensed under the **GNU General Public License, version 3 or later**; see [LICENSE](docs/LICENSE.md).
+Provided without warranty. Historical [setup](docs/ORANGE-PI-SETUP.md) and [UI notes](docs/UI-UPDATE.md) describe
+earlier deployments; use the current installation guide and applied settings for this version.
