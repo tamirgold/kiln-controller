@@ -6,6 +6,10 @@ Ubuntu images need compatible GPIO devices and should be checked before use.
 The current configuration uses the H618 board's H616-compatible pin mapping;
 it is not a generic Raspberry Pi installation.
 
+For wiring, start with the [hardware guide and diagrams](HARDWARE.md): controller
+power, MAX31855 sensor, the DC-input SSR, and the three-phase power architecture.
+This page covers the software setup and commissioning sequence.
+
 Commands below run on the Orange Pi as `orangepi`. The service expects the
 repository at `/home/orangepi/kiln-controller`. If you use another account or
 directory, adjust the service before installing it.
@@ -195,10 +199,13 @@ and the corresponding sensor selection. Its 50 Hz filter setting does not
 apply to MAX31855.
 
 The documented active-low relay uses an external 10 kΩ pull-up from IN1/pin 37
-to 3.3 V, so the heat request is off when GPIO is released. Its relay contacts
-switch the SSR's DC control input, not kiln mains. See the dated
-[relay wiring record](RELAY-MODULE-CHANGE.md) for that specific module; verify
-your own module's input and power requirements.
+to 3.3 V, which biases the heat request off while that rail is powered. It does
+not guarantee OFF when the Pi loses power. Verify the driver behavior through
+boot, shutdown, and power loss with kiln mains isolated. Its relay contacts
+switch the SSR's DC control input, not kiln mains. Follow the
+[relay and SSR diagram](HARDWARE.md#4-connect-the-relay-and-ssr-input), and verify
+your own module's input and power requirements. The dated
+[relay wiring record](RELAY-MODULE-CHANGE.md) describes the earlier module.
 
 With mains still isolated, verify a plausible physical sensor reading and its
 response to warming the probe. Stop any controller process first; on an

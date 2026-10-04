@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="970" viewBox="0 0 1200 970" role="img" aria-labelledby="title desc">
+<title id="title">Hardware at a glance</title><desc id="desc">Conceptual separation of the low-voltage temperature-control chain and kiln mains power. A thermocouple feeds MAX31855 and Orange Pi, which controls a compatible SSR through a relay or interface. Protected isolated power supplies the controller. An independent hardwired safety limiter operates the mains contactor.</desc>
+<defs><style>text{font-family:Arial,Helvetica,sans-serif} .heading{font-weight:700} </style>
+<marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
+<marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
+<marker id="control" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
+<marker id="gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
+</defs><rect width="1200" height="100%" fill="#ffffff"/>
+<text x="36" y="50" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Hardware at a glance</text>
+<text x="36" y="84" font-size="21" fill="#52635b" font-weight="400" text-anchor="start">Separate temperature signals, low-voltage control, and kiln power.</text>
+<rect x="26" y="119" width="1148" height="331" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
+<text x="48" y="155" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">LOW VOLTAGE · sensing and control</text>
+<rect x="48" y="188" width="175" height="114" rx="14" fill="#ffffff" stroke="#c9d6d0" stroke-width="2"/>
+<text x="135.5" y="237.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">K-type</text>
+<text x="135.5" y="267.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">thermocouple</text>
+<rect x="266" y="188" width="175" height="114" rx="14" fill="#ffffff" stroke="#c9d6d0" stroke-width="2"/>
+<text x="353.5" y="237.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">MAX31855</text>
+<text x="353.5" y="267.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">sensor module</text>
+<rect x="484" y="188" width="175" height="114" rx="14" fill="#ffffff" stroke="#c9d6d0" stroke-width="2"/>
+<text x="571.5" y="237.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Orange Pi</text>
+<text x="571.5" y="267.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Zero 2W</text>
+<rect x="702" y="188" width="190" height="114" rx="14" fill="#ffffff" stroke="#c9d6d0" stroke-width="2"/>
+<text x="797.0" y="237.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Relay /</text>
+<text x="797.0" y="267.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">interface</text>
+<rect x="935" y="188" width="215" height="114" rx="14" fill="#ffffff" stroke="#c9d6d0" stroke-width="2"/>
+<text x="1042.5" y="237.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Compatible</text>
+<text x="1042.5" y="267.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">SSR DC input</text>
+<path d="M 223 245 L 262 245" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<path d="M 441 245 L 480 245" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<path d="M 659 245 L 698 245" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<path d="M 892 245 L 931 245" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<rect x="48" y="351" width="270" height="71" rx="14" fill="#ffffff" stroke="#c5d9d0" stroke-width="2"/>
+<text x="183.0" y="392.96" font-size="19" fill="#25362f" font-weight="400" text-anchor="middle">Isolated low-voltage PSU</text>
+<path d="M 318 386 L 571 386 L 571 305" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<path d="M 571 386 L 797 386 L 797 305" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<text x="355" y="421" font-size="18" fill="#7654a6" font-weight="400" text-anchor="start">Correct supply for each device</text>
+<text x="859" y="431" font-size="18" fill="#1c7c89" font-weight="400" text-anchor="start">Heat request</text>
+<path d="M 1042 302 L 1042 407 L 820 407 L 820 548" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<rect x="26" y="483" width="1148" height="285" rx="14" fill="#fff6f1" stroke="#e9cebd" stroke-width="2"/>
+<text x="48" y="521" font-size="22" fill="#bd5229" font-weight="700" text-anchor="start">MAINS · power path (concept only)</text>
+<path d="M 820 453 L 820 548" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<rect x="48" y="552" width="160" height="122" rx="14" fill="#ffffff" stroke="#e6c5b0" stroke-width="2"/>
+<text x="128.0" y="605.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Incoming</text>
+<text x="128.0" y="635.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">supply</text>
+<rect x="247" y="552" width="180" height="122" rx="14" fill="#ffffff" stroke="#e6c5b0" stroke-width="2"/>
+<text x="337.0" y="605.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Isolator +</text>
+<text x="337.0" y="635.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">protection</text>
+<rect x="466" y="552" width="210" height="122" rx="14" fill="#ffffff" stroke="#e6c5b0" stroke-width="2"/>
+<text x="571.0" y="605.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Safety</text>
+<text x="571.0" y="635.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">contactor</text>
+<rect x="715" y="552" width="210" height="122" rx="14" fill="#ffffff" stroke="#e6c5b0" stroke-width="2"/>
+<text x="820.0" y="605.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">SSR / power</text>
+<text x="820.0" y="635.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">control stage</text>
+<rect x="964" y="552" width="184" height="122" rx="14" fill="#ffffff" stroke="#e6c5b0" stroke-width="2"/>
+<text x="1056.0" y="605.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">Kiln</text>
+<text x="1056.0" y="635.14" font-size="21" fill="#25362f" font-weight="400" text-anchor="middle">elements</text>
+<path d="M 208 613 L 242 613" fill="none" stroke="#bd5229" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 427 613 L 461 613" fill="none" stroke="#bd5229" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 676 613 L 710 613" fill="none" stroke="#bd5229" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 925 613 L 959 613" fill="none" stroke="#bd5229" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<text x="48" y="719" font-size="19" fill="#bd5229" font-weight="400" text-anchor="start">An electrician provides a protected supply branch for the isolated low-voltage PSU.</text>
+<rect x="26" y="798" width="1148" height="104" rx="14" fill="#f7f6fa" stroke="#d4cbe2" stroke-width="2"/>
+<text x="48" y="831" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Independent sensor + manual-reset temperature limiter + stop chain → safety contactor.</text>
+<text x="48" y="862" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">The safety circuit operates without the Orange Pi; SSRs can leak or fail closed.</text>
+<path d="M 46 938 L 114 938" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" stroke-dasharray="8 6"/>
+<text x="130" y="945" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">Temperature / command</text>
+<path d="M 450 938 L 518 938" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<text x="534" y="945" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">Low-voltage supply</text>
+<path d="M 830 938 L 898 938" fill="none" stroke="#bd5229" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<text x="914" y="945" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">Mains power</text>
+</svg>

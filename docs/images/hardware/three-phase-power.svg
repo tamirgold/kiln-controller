@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1240" viewBox="0 0 1200 1240" role="img" aria-labelledby="title desc">
+<title id="title">Three-phase kiln: power and independent safety</title><desc id="desc">Conceptual electrical architecture only, not terminal wiring. Three-phase supply goes through a lockable isolator, coordinated protection, an all-phase safety contactor, a suitably selected SSR or power controller, and the kiln’s existing factory-connected elements. Protective earth is uninterrupted to the chassis. Neutral is included only where required. An independent temperature sensor, manual-reset limiter, and stop chain are hardwired to the contactor coil, independent of the Orange Pi. Ratings, terminals and coil voltage must be designed by a qualified electrician.</desc>
+<defs><style>text{font-family:Arial,Helvetica,sans-serif} .heading{font-weight:700} </style>
+<marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
+<marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
+<marker id="control" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
+<marker id="gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
+</defs><rect width="1200" height="100%" fill="#ffffff"/>
+<text x="36" y="50" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Three-phase kiln: power and independent safety</text>
+<text x="36" y="88" font-size="21" fill="#bd5229" font-weight="700" text-anchor="start">CONCEPT ONLY · a qualified electrician assigns ratings, protection, and terminals.</text>
+<rect x="30" y="119" width="1140" height="74" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
+<text x="51" y="148" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">Do not infer supply voltage, neutral use, current rating, or star/delta connections from this drawing.</text>
+<text x="51" y="175" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">Use the kiln nameplate, element data, and the exact power-controller datasheet.</text>
+<text x="36" y="233" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">L1 + L2 + L3 follow the designed power path</text>
+<rect x="36" y="272" width="149" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="110.5" y="351.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Supply</text>
+<text x="110.5" y="380.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">L1 · L2 · L3</text>
+<rect x="223" y="272" width="155" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="300.5" y="351.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Lockable</text>
+<text x="300.5" y="380.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">isolator</text>
+<rect x="416" y="272" width="155" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="493.5" y="351.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Coordinated</text>
+<text x="493.5" y="380.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">protection</text>
+<rect x="609" y="272" width="160" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="689.0" y="337.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">All-phase</text>
+<text x="689.0" y="366.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">safety</text>
+<text x="689.0" y="395.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">contactor</text>
+<rect x="807" y="272" width="175" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="894.5" y="351.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">SSR / power</text>
+<text x="894.5" y="380.8" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">controller</text>
+<rect x="1020" y="272" width="144" height="175" rx="14" fill="#fff6f1" stroke="#e6c5b0" stroke-width="2"/>
+<text x="1092.0" y="337.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Existing</text>
+<text x="1092.0" y="366.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">kiln</text>
+<text x="1092.0" y="395.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">elements</text>
+<path d="M 185 348 L 217 348" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 185 359 L 217 359" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 185 370 L 217 370" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 378 348 L 410 348" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 378 359 L 410 359" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 378 370 L 410 370" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 571 348 L 603 348" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 571 359 L 603 359" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 571 370 L 603 370" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 769 348 L 801 348" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 769 359 L 801 359" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 769 370 L 801 370" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 982 348 L 1014 348" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 982 359 L 1014 359" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#power)"/>
+<path d="M 982 370 L 1014 370" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="30" y="479" width="1140" height="98" rx="14" fill="#f7f8f7" stroke="#d4dcd7" stroke-width="2"/>
+<text x="51" y="511" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Power stage: a suitable three-phase unit OR compatible single-phase SSRs, as designed.</text>
+<text x="51" y="543" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Use an approved on/off control interface. Retain the kiln’s factory star/delta connections.</text>
+<text x="36" y="621" font-size="22" fill="#568522" font-weight="700" text-anchor="start">PE · uninterrupted protective earth</text>
+<path d="M 41 651 L 1033 651" fill="none" stroke="#568522" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="1035" y="602" width="129" height="83" rx="14" fill="#f3f8ec" stroke="#bdd09f" stroke-width="2"/>
+<text x="1099" y="636" font-size="20" fill="#568522" font-weight="700" text-anchor="middle">Kiln</text>
+<text x="1099" y="664" font-size="20" fill="#568522" font-weight="700" text-anchor="middle">chassis</text>
+<text x="36" y="685" font-size="19" fill="#568522" font-weight="400" text-anchor="start">Never switch PE through a relay, SSR, or contactor.</text>
+<rect x="30" y="719" width="1140" height="73" rx="14" fill="#f7f8f7" stroke="#d4dcd7" stroke-width="2"/>
+<text x="51" y="749" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">N · only if required by the nameplate and electrical design.</text>
+<text x="51" y="777" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Do not assume a neutral is present, and never bridge neutral to protective earth.</text>
+<rect x="30" y="829" width="1140" height="266" rx="14" fill="#f7f6fa" stroke="#d4cbe2" stroke-width="2"/>
+<text x="51" y="868" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">Independent safety circuit · hardwired, with its own temperature sensor</text>
+<rect x="51" y="904" width="238" height="118" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<text x="170.0" y="955.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Independent</text>
+<text x="170.0" y="984.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">temperature sensor</text>
+<rect x="334" y="904" width="263" height="118" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<text x="465.5" y="955.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Manual-reset</text>
+<text x="465.5" y="984.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">temperature limiter</text>
+<rect x="642" y="904" width="208" height="118" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<text x="746.0" y="955.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Stop / safety</text>
+<text x="746.0" y="984.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">chain</text>
+<rect x="895" y="904" width="251" height="118" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<text x="1020.5" y="955.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">Safety contactor</text>
+<text x="1020.5" y="984.3" font-size="20" fill="#25362f" font-weight="400" text-anchor="middle">coil</text>
+<path d="M 289 962 L 329 962" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<path d="M 597 962 L 637 962" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<path d="M 850 962 L 890 962" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<text x="51" y="1067" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Coil/control voltage and safety circuitry must be designed. No Pi GPIO safety actuation is shown.</text>
+<text x="36" y="1141" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">SSRs can leak or fail closed. A contactor does not replace a lockable isolator.</text>
+<text x="36" y="1175" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">One software heat request controls all phases together; this is not independent three-zone control.</text>
+</svg>

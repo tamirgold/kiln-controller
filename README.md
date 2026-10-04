@@ -3,7 +3,7 @@
 Tamir's web-based electric kiln controller for the **Orange Pi Zero 2W**: live temperature control,
 editable programs, durable firing history, electricity cost estimates, and browser-based settings.
 
-[Installation](#installation) · [Dashboard](#dashboard-and-programs) · [Firing history](#firing-history) ·
+[Hardware](#hardware) · [Installation](#installation) · [Dashboard](#dashboard-and-programs) · [Firing history](#firing-history) ·
 [Settings](#settings) · [Recovery](#control-and-power-loss-recovery) · [API](#api-and-diagnostics) ·
 [Backups](#data-backups-and-updates)
 
@@ -12,9 +12,30 @@ editable programs, durable firing history, electricity cost estimates, and brows
 Screenshots were captured from the real running controller on **4 October 2026**. Readings change during
 a firing, and this installation's local configuration differs from the repository defaults.
 
+## Hardware
+
+The [illustrated hardware guide](docs/HARDWARE.md) explains controller power,
+sensor wiring, the relay/SSR connection, and a three-phase kiln's power path.
+It includes the supplied SSR reference: **3–32 VDC control input, up to 40 mA**.
+The relay switches a 5 V control supply into that input; kiln mains use the
+separate SSR power terminals.
+
+![Hardware overview showing temperature sensing, heat control, and kiln power](docs/images/hardware/overview.svg)
+
+| Start here | What the guide shows |
+| --- | --- |
+| [Controller power](docs/HARDWARE.md#2-power-the-controller) | 5 V board power, 3.3 V logic, and relay supply requirements |
+| [Sensor & wiring](docs/HARDWARE.md#3-connect-the-temperature-sensor) | MAX31855 connections by physical Orange Pi pin number |
+| [Relay & SSR](docs/HARDWARE.md#4-connect-the-relay-and-ssr-input) | Active-low heat request, COM/NO contacts, and DC input polarity |
+| [Three-phase kiln](docs/HARDWARE.md#5-understand-the-three-phase-power-path) | Isolation, protection, independent cutoff, contactor, SSR, and protective earth |
+
+The mains drawing is a conceptual arrangement for a qualified electrician.
+Actual supply voltage, element connections, and protective-device ratings must
+come from the kiln's nameplate and installation design.
+
 ## Installation
 
-**Start with the [Orange Pi installation guide](docs/INSTALL.md).** It covers the OS, GPIO, Python dependencies,
+**Follow the [hardware guide](docs/HARDWARE.md) and [Orange Pi software installation guide](docs/INSTALL.md).** The software guide covers the OS, GPIO, Python dependencies,
 simulation, wiring, settings, service, commissioning, testing, backups, and updates.
 
 > Keep kiln mains isolated while configuring and checking the output. The tracked

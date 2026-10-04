@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1195" viewBox="0 0 1200 1195" role="img" aria-labelledby="title desc">
+<title id="title">Relay control: switching the SSR’s DC input</title><desc id="desc">Example for a verified 3–32 VDC on/off SSR input. Orange Pi physical pin 37 PI16 drives a compatible 3.3 volt active-low relay IN1, with a 10 kiloohm pull-up to 3.3 volts. Pin 39 is the shared relay logic reference for this non-isolated GPIO example. A regulated 5 volt SSR control supply goes through dry COM and NO contacts to the SSR positive input; its zero volt return goes to SSR negative. No kiln mains passes through the small relay.</desc>
+<defs><style>text{font-family:Arial,Helvetica,sans-serif} .heading{font-weight:700} </style>
+<marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
+<marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
+<marker id="control" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
+<marker id="gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
+</defs><rect width="1200" height="100%" fill="#ffffff"/>
+<text x="36" y="50" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Relay control: switching the SSR’s DC input</text>
+<text x="36" y="86" font-size="21" fill="#52635b" font-weight="400" text-anchor="start">Supplied reference: 3–32 VDC input, up to 40 mA · verify the exact unit label.</text>
+<rect x="30" y="111" width="1140" height="65" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
+<text x="51" y="151" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">For a verified DC on/off SSR input only. Use a compatible 3.3 V relay interface.</text>
+<rect x="30" y="204" width="1140" height="351" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
+<text x="51" y="241" font-size="23" fill="#173f35" font-weight="700" text-anchor="start">1   GPIO → active-low relay logic</text>
+<rect x="55" y="287" width="310" height="184" rx="14" fill="#ffffff" stroke="#c5d9d0" stroke-width="2"/>
+<rect x="760" y="287" width="355" height="184" rx="14" fill="#ffffff" stroke="#c5d9d0" stroke-width="2"/>
+<text x="76" y="318" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">Orange Pi Zero 2W</text>
+<text x="780" y="318" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">Relay / driver module</text>
+<text x="76" y="365" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">Pin 37 · PI16</text>
+<text x="780" y="365" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">IN1 · active LOW</text>
+<path d="M 365 358 L 754 358" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
+<text x="76" y="447" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">Pin 39 · GND</text>
+<text x="780" y="447" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">Logic GND</text>
+<path d="M 365 440 L 754 440" fill="none" stroke="#7b8982" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#gray)"/>
+<text x="470" y="289" font-size="19" fill="#7654a6" font-weight="700" text-anchor="start">Pi 3.3 V</text>
+<path d="M 566 286 L 566 307" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="555" y="307" width="22" height="32" rx="2" fill="#ffffff" stroke="#7654a6" stroke-width="2"/>
+<path d="M 566 339 L 566 358" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="566" cy="358" r="4" fill="#7654a6"/>
+<text x="590" y="330" font-size="19" fill="#7654a6" font-weight="400" text-anchor="start">10 kΩ</text>
+<text x="426" y="396" font-size="19" fill="#1c7c89" font-weight="400" text-anchor="start">HIGH = OFF · LOW = heat</text>
+<text x="780" y="501" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Board power: per its datasheet.</text>
+<text x="51" y="531" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Shared logic ground is for the non-isolated GPIO interface shown here.</text>
+<rect x="30" y="586" width="1140" height="427" rx="14" fill="#f7f6fa" stroke="#d4cbe2" stroke-width="2"/>
+<text x="51" y="624" font-size="23" fill="#173f35" font-weight="700" text-anchor="start">2   Dry contact → SSR control input only</text>
+<rect x="55" y="675" width="270" height="254" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<rect x="433" y="675" width="339" height="182" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<rect x="914" y="675" width="230" height="254" rx="14" fill="#ffffff" stroke="#d4cbe2" stroke-width="2"/>
+<text x="76" y="712" font-size="21" fill="#173f35" font-weight="700" text-anchor="start">Regulated 5 V DC</text>
+<text x="76" y="740" font-size="21" fill="#173f35" font-weight="700" text-anchor="start">SSR control supply</text>
+<text x="935" y="712" font-size="21" fill="#173f35" font-weight="700" text-anchor="start">SSR DC INPUT</text>
+<text x="935" y="743" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">3–32 VDC</text>
+<text x="76" y="797" font-size="22" fill="#7654a6" font-weight="700" text-anchor="start">+5 V</text>
+<text x="935" y="797" font-size="22" fill="#7654a6" font-weight="700" text-anchor="start">+ input</text>
+<text x="76" y="899" font-size="22" fill="#7654a6" font-weight="700" text-anchor="start">0 V</text>
+<text x="935" y="899" font-size="22" fill="#7654a6" font-weight="700" text-anchor="start">− input</text>
+<path d="M 325 790 L 491 790" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="491" cy="790" r="6" fill="#7654a6"/>
+<path d="M 491 790 L 633 752" fill="none" stroke="#7654a6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="677" cy="790" r="6" fill="#7654a6"/>
+<path d="M 677 790 L 908 790" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<text x="488" y="737" font-size="20" fill="#7654a6" font-weight="700" text-anchor="middle">COM</text>
+<text x="678" y="737" font-size="20" fill="#7654a6" font-weight="700" text-anchor="middle">NO</text>
+<text x="459" y="832" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">NC unused · shown OFF</text>
+<path d="M 325 892 L 908 892" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#control)"/>
+<text x="51" y="964" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">The dry contact can keep SSR control supply 0 V separate from the Pi logic GND.</text>
+<text x="51" y="993" font-size="20" fill="#bd5229" font-weight="700" text-anchor="start">Never route kiln mains through the small relay in this design.</text>
+<rect x="30" y="1040" width="1140" height="126" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
+<text x="51" y="1075" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Current deployment: inverted output logic, with a 30 s control window.</text>
+<text x="51" y="1108" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Verify OFF during boot and power loss; the pull-up needs the 3.3 V rail.</text>
+<text x="51" y="1141" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Size the 5 V supply and relay contacts for the input current: up to 40 mA in the reference.</text>
+</svg>

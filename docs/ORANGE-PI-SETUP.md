@@ -47,8 +47,10 @@ its power and driver-side connections. Do not assume the GPIO can directly
 supply an SSR just because its label says 3-32 V DC.
 
 For the active-low relay module installed on 24 September, use a 10 kohm
-pull-up between pin 37 and 3.3 V (pin 17); remove any previous pull-down. This holds the heating request off
-while the board is unpowered, booting, or releasing its GPIO. Use a suitable
+pull-up between pin 37 and 3.3 V (pin 17); remove any previous pull-down. This biases the heating request off
+while the 3.3 V rail is powered; it does not guarantee OFF if that rail loses
+power while the driver remains powered. Verify the actual behavior during
+boot, shutdown, and controller power loss with kiln mains isolated. Use a suitable
 independent over-temperature cutoff for the kiln; software cannot interrupt
 a failed-closed SSR.
 
