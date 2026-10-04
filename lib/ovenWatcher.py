@@ -14,33 +14,37 @@ class OvenWatcher(threading.Thread):
         self.oven = oven
         self.start()
 
-# FIXME - need to save runs of schedules in near-real-time
-# FIXME - this will enable re-start in case of power outage
-# FIXME - re-start also requires safety start (pausing at the beginning
-# until a temp is reached)
-# FIXME - re-start requires a time setting in minutes.  if power has been
-# out more than N minutes, don't restart
-# FIXME - this should not be done in the Watcher, but in the Oven class
-
     def run(self):
         while True:
-            oven_state = self.oven.get_state()
+            with self.oven._restart_lock:
+                oven_state = self.oven.get_state()
+                self.oven.record_history()
+                history = getattr(self.oven, 'firing_history', None)
+                if history and self.oven.state == 'IDLE' and not self.oven.should_i_automatic_restart():
+                    try:
+                        history.reconcile_idle()
+                    except (OSError, ValueError) as exc:
+                        history.error = 'Firing summary could not be saved: ' + str(exc)
+                        log.exception('Could not finish history record')
            
             # record state for any new clients that join
-            if oven_state.get("state") == "RUNNING":
+            if oven_state.get("state") in ("RUNNING", "PAUSED"):
                 self.last_log.append(oven_state)
+                if len(self.last_log) > 4000:
+                    self.last_log = self.last_log[:-1:2] + [self.last_log[-1]]
             else:
                 self.recording = False
             self.notify_all(oven_state)
-            time.sleep(self.oven.time_step)
+            # Keep UI status and durable history responsive even with a slow relay cycle.
+            time.sleep(min(2.0, self.oven.time_step))
 
-    def lastlog_subset(self,maxpts=50):
+    def lastlog_subset(self,maxpts=300):
         '''send about maxpts from lastlog by skipping unwanted data'''
         totalpts = len(self.last_log)
         if (totalpts <= maxpts):
             return self.last_log
-        every_nth = int(totalpts / (maxpts - 1))
-        return self.last_log[::every_nth]
+        return [self.last_log[round(i * (totalpts - 1) / (maxpts - 1))]
+                for i in range(maxpts)]
 
     def record(self, profile):
         self.last_profile = profile
@@ -66,10 +70,8 @@ class OvenWatcher(threading.Thread):
             'log': self.lastlog_subset(),
             #'started': self.started
         }
-        print(backlog)
         backlog_json = json.dumps(backlog)
         try:
-            print(backlog_json)
             observer.send(backlog_json)
         except:
             log.error("Could not send backlog to new observer")

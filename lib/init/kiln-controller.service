@@ -1,8 +1,27 @@
 [Unit]
-Description=kiln-controller
+Description=Orange Pi kiln controller
+Wants=network-online.target
+After=network-online.target chrony.service
+StartLimitIntervalSec=60
+StartLimitBurst=6
 
 [Service]
-ExecStart=/home/pi/kiln-controller/venv/bin/python /home/pi/kiln-controller/kiln-controller.py
+Type=simple
+User=orangepi
+Group=orangepi
+SupplementaryGroups=gpio
+WorkingDirectory=/home/orangepi/kiln-controller
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/home/orangepi/kiln-controller/venv/bin/python /home/orangepi/kiln-controller/heater-off.py
+ExecStart=/home/orangepi/kiln-controller/venv/bin/python /home/orangepi/kiln-controller/kiln-controller.py
+ExecStopPost=/home/orangepi/kiln-controller/venv/bin/python /home/orangepi/kiln-controller/heater-off.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+NoNewPrivileges=true
+UMask=0027
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=30
 
 [Install]
 WantedBy=multi-user.target

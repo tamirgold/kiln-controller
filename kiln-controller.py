@@ -5,6 +5,8 @@ import os
 import sys
 import logging
 import json
+import signal
+import threading
 
 import bottle
 import gevent
@@ -36,9 +38,43 @@ if config.simulate == True:
 else:
     log.info("this is a real kiln")
     oven = RealOven()
+from lib.firing_history import Archive, install_api as install_history
+oven.firing_history = Archive(os.path.join(script_dir, 'storage', 'simulated-firings' if config.simulate else 'firings'), config)
+install_history(app, oven.firing_history)
 ovenWatcher = OvenWatcher(oven)
 # this ovenwatcher is used in the oven class for restarts
 oven.set_ovenwatcher(ovenWatcher)
+
+from lib.settings_api import install as install_settings
+settings_control = install_settings(app, config, oven)
+
+def stop_process(signum, frame):
+    # Preserve saved progress on service/OS restart, but switch heat off now.
+    if hasattr(oven, 'output'):
+        oven.output.cool(0)
+    if oven.state in ('RUNNING', 'PAUSED'):
+        oven.record_history(force=True)
+        oven.save_automatic_restart_state()
+    raise SystemExit(0)
+
+def thread_failed(args):
+    log.critical('Controller thread failed; stopping heating',
+                 exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+    try:
+        oven.abort_run("controller_fault")
+    finally:
+        if hasattr(oven, 'output'):
+            oven.output.cool(0)
+        os._exit(1)
+
+signal.signal(signal.SIGTERM, stop_process)
+signal.signal(signal.SIGINT, stop_process)
+threading.excepthook = thread_failed
+
+@app.get('/api/health')
+def health():
+    return dict(oven.get_state(), controller_alive=oven.is_alive(),
+                temp_scale=config.temp_scale, automatic_restart_window=config.automatic_restart_window)
 
 @app.route('/')
 def index():
@@ -59,6 +95,9 @@ def handle_api():
 @app.post('/api')
 def handle_api():
     log.info("/api is alive")
+    if settings_control['restarting']:
+        bottle.response.status = 409
+        return {'success': False, 'error': 'Controller is restarting to apply settings.'}
 
 
     # run a kiln schedule
@@ -154,6 +193,9 @@ def handle_control():
                 log.info("Received (control): %s" % message)
                 msgdict = json.loads(message)
                 if msgdict.get("cmd") == "RUN":
+                    if settings_control['restarting']:
+                        wsock.send(json.dumps({'error': 'Controller is restarting.'}))
+                        continue
                     log.info("RUN command received")
                     profile_obj = msgdict.get('profile')
                     if profile_obj:
@@ -265,6 +307,8 @@ def get_profiles():
         profile_files = []
     profiles = []
     for filename in profile_files:
+        if not filename.endswith('.json') or not os.path.isfile(os.path.join(profile_path, filename)):
+            continue
         with open(os.path.join(profile_path, filename), 'r') as f:
             profiles.append(json.load(f))
     profiles = normalize_temp_units(profiles)
@@ -318,10 +362,12 @@ def convert_to_f(profile):
 def normalize_temp_units(profiles):
     normalized = []
     for profile in profiles:
-        if "temp_units" in profile:
-            if config.temp_scale == "f" and profile["temp_units"] == "c": 
-                profile = convert_to_f(profile)
-                profile["temp_units"] = "f"
+        units = profile.get('temp_units', config._settings_base_values['temp_scale'])
+        if config.temp_scale == 'f' and units == 'c':
+            profile = convert_to_f(profile)
+        elif config.temp_scale == 'c' and units == 'f':
+            profile = convert_to_c(profile)
+        profile['temp_units'] = config.temp_scale
         normalized.append(profile)
     return normalized
 
@@ -338,6 +384,12 @@ def get_config():
         "time_scale_slope": config.time_scale_slope,
         "time_scale_profile": config.time_scale_profile,
         "kwh_rate": config.kwh_rate,
+        "kw_elements": config.kw_elements,
+        "emergency_shutoff_temp": config.emergency_shutoff_temp,
+        "automatic_restart_window": config.automatic_restart_window,
+        "automatic_restarts": config.automatic_restarts,
+        "seek_start": config.seek_start,
+        "sensor_time_wait": config.sensor_time_wait,
         "currency_type": config.currency_type})    
 
 def main():

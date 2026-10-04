@@ -10,3 +10,24 @@ thumbs.db
 .idea/*
 state.json
 venv/*
+
+# Python caches, local environments, and test output
+__pycache__/
+.pytest_cache/
+.venv/
+.coverage
+htmlcov/
+*.log
+.DS_Store
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+
+# Deployment settings and recorded firing data
+/settings.json
+/settings.pending.json
+/storage/settings-backups/
+/storage/firings/
+/storage/simulated-firings/

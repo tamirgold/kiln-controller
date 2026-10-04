@@ -572,7 +572,8 @@ $(document).ready(function()
                     $('#state').html('<p class="ds-text">'+state+'</p>');
                 }
 
-                $('#act_temp').html(parseInt(x.temperature));
+                $('#act_temp').text(x.sensor_ready === false ? '---' : parseInt(x.temperature));
+                $('#sensor_warning').toggle(x.sensor_ready === false);
                 heat_rate = parseInt(x.heat_rate)
                 if (heat_rate > 9999) { heat_rate = 9999; }
                 if (heat_rate < -9999) { heat_rate = -9999; }

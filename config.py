@@ -1,5 +1,9 @@
 import logging
 import os
+# The Zero 2W uses the same GPIO controller/offsets as H616. Blinka does
+# not yet provide a Zero 2W board module; use the verified common pins.
+os.environ.setdefault('BLINKA_FORCEBOARD', 'ORANGE_PI_ZERO_2')
+os.environ.setdefault('BLINKA_FORCECHIP', 'H616')
 from digitalio import DigitalInOut
 import busio
 
@@ -12,7 +16,7 @@ log_level = logging.INFO
 log_format = '%(asctime)s %(levelname)s %(name)s: %(message)s'
 
 ### Server
-listening_port = 8081
+listening_port = int(os.environ.get('KILN_PORT', '8081'))
 
 ########################################################################
 # Cost Information
@@ -20,9 +24,9 @@ listening_port = 8081
 # This is used to calculate a cost estimate before a run. It's also used
 # to produce the actual cost during a run. My kiln has three
 # elements that when my switches are set to high, consume 9460 watts.
-kwh_rate        = 0.1319  # cost per kilowatt hour per currency_type to calculate cost to run job
-kw_elements     = 9.460 # if the kiln elements are on, the wattage in kilowatts
-currency_type   = "$"   # Currency Symbol to show when calculating cost to run job
+kwh_rate = 0.645
+kw_elements = 11.0
+currency_type = '₪'
 
 ########################################################################
 #
@@ -84,11 +88,11 @@ currency_type   = "$"   # Currency Symbol to show when calculating cost to run j
 
 try:
     import board
-    spi_sclk  = board.D17    #spi clock
-    spi_miso  = board.D27    #spi Microcomputer In Serial Out
-    spi_cs    = board.D22    #spi Chip Select
-    spi_mosi  = board.D10    #spi Microcomputer Out Serial In (not connected) 
-    gpio_heat = board.D23    #output that controls relay
+    spi_sclk  = board.PH6    # physical 23, GPIO 230, MAX31855 CLK
+    spi_miso  = board.MISO   # physical 21, PH8 / GPIO 232, MAX31855 DO
+    spi_cs    = board.PH5    # physical 24, GPIO 229, MAX31855 CS
+    spi_mosi  = board.MOSI  # physical 19, PH7; leave unconnected
+    gpio_heat = board.PI16  # physical 37, GPIO 272, SSR driver signal
     gpio_heat_invert = False #invert the output state
 except (NotImplementedError,AttributeError):
     print("not running on blinka recognized board, probably a simulation")
@@ -140,9 +144,9 @@ sensor_time_wait = 2
 # well with the simulated oven. You must tune them to work well with 
 # your specific kiln. Note that the integral pid_ki is
 # inverted so that a smaller number means more integral action.
-pid_kp = 10   # Proportional 25,200,200
-pid_ki = 80   # Integral
-pid_kd = 220.83497910261562 # Derivative
+pid_kp = 18   # Upstream 10 scaled for Celsius; tune for your kiln
+pid_ki = 44.4444444444   # Inverse integral gain, scaled from upstream 80
+pid_kd = 397.5029623847 # Upstream derivative gain scaled for Celsius
 
 ########################################################################
 #
@@ -155,8 +159,8 @@ stop_integral_windup = True
 ########################################################################
 #
 #   Simulation parameters
-simulate = True
-sim_t_env      = 65   # deg
+simulate = os.environ.get('KILN_SIMULATE', '0') == '1'
+sim_t_env      = 18.3333333333   # Celsius
 sim_c_heat     = 500.0  # J/K  heat capacity of heat element
 sim_c_oven     = 5000.0 # J/K  heat capacity of oven
 sim_p_heat     = 5450.0 # W    heating power of oven
@@ -176,7 +180,7 @@ sim_speedup_factor = 1
 #
 # If you change the temp_scale, all settings in this file are assumed to
 # be in that scale.
-temp_scale          = "f" # c = Celsius | f = Fahrenheit - Unit to display
+temp_scale          = "c" # c = Celsius | f = Fahrenheit - Unit to display
 time_scale_slope    = "h" # s = Seconds | m = Minutes | h = Hours - Slope displayed in temp_scale per time_scale_slope
 time_scale_profile  = "m" # s = Seconds | m = Minutes | h = Hours - Enter and view target time in time_scale_profile
 
@@ -185,7 +189,7 @@ time_scale_profile  = "m" # s = Seconds | m = Minutes | h = Hours - Enter and vi
 # naturally cool off. If your SSR has failed/shorted/closed circuit, this
 # means your kiln receives full power until your house burns down.
 # this should not replace you watching your kiln or use of a kiln-sitter
-emergency_shutoff_temp = 2264 #cone 7
+emergency_shutoff_temp = 1240 # Celsius; equivalent to upstream 2264 F
 
 # If the current temperature is outside the pid control window,
 # delay the schedule until it does back inside. This allows for heating
@@ -199,7 +203,7 @@ kiln_must_catch_up = True
 # or 100% off because the kiln is too hot. No integral builds up
 # outside the window. The bigger you make the window, the more
 # integral you will accumulate. This should be a positive integer.
-pid_control_window = 5 #degrees
+pid_control_window = 2.7777777778 # Celsius; equivalent to upstream 5 F
 
 # thermocouple offset
 # If you put your thermocouple in ice water and it reads 36F, you can
@@ -257,7 +261,8 @@ ignore_tc_too_many_errors = False
 # and is written in the same directory as config.py.
 automatic_restarts = True
 automatic_restart_window = 15 # max minutes since power outage
-automatic_restart_state_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ),'state.json'))
+require_synced_clock_for_restart = True # Chrony must establish outage age after boot
+automatic_restart_state_file = os.environ.get('KILN_STATE_FILE', os.path.abspath(os.path.join(os.path.dirname( __file__ ),'state.json')))
 
 ########################################################################
 # load kiln profiles from this directory
@@ -275,5 +280,10 @@ kiln_profiles_directory = os.path.abspath(os.path.join(os.path.dirname( __file__
 # control window and below throttle_below_temp, only throttle_percent
 # of the elements are used max.
 # To prevent throttling, set throttle_percent to 100.
-throttle_below_temp = 300
-throttle_percent = 20
+throttle_below_temp = 148.8888888889 # Celsius; equivalent to upstream 300 F
+throttle_percent = 100
+
+# Validated settings from the web UI. Pending edits are kept separate until
+# explicitly applied while the kiln is idle.
+from lib.settings_store import load_overrides as _load_settings_overrides
+_load_settings_overrides(globals())

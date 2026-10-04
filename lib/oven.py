@@ -9,6 +9,9 @@ import digitalio
 import busio
 import adafruit_bitbangio as bitbangio
 import statistics
+import math
+import tempfile
+import subprocess
 
 log = logging.getLogger(__name__)
 
@@ -40,19 +43,36 @@ class Output(object):
     '''
     def __init__(self):
         self.active = False
+        self._heat_lock = threading.RLock()
+        self._on_seconds = 0.0
+        self._on_since = None
         self.heater = digitalio.DigitalInOut(config.gpio_heat) 
-        self.heater.direction = digitalio.Direction.OUTPUT 
         self.off = config.gpio_heat_invert
         self.on = not self.off
+        self.heater.switch_to_output(value=self.off)
 
     def heat(self,sleepfor):
-        self.heater.value = self.on
-        time.sleep(sleepfor)
+        with self._heat_lock:
+            self.heater.value = self.on
+            self._on_since = time.monotonic()
+        try:
+            time.sleep(sleepfor)
+        finally:
+            self.cool(0)
 
     def cool(self,sleepfor):
         '''no active cooling, so sleep'''
-        self.heater.value = self.off
+        with self._heat_lock:
+            self.heater.value = self.off
+            if self._on_since is not None:
+                self._on_seconds += max(0, time.monotonic() - self._on_since)
+                self._on_since = None
         time.sleep(sleepfor)
+
+    def seconds_on(self):
+        with self._heat_lock:
+            return self._on_seconds + (max(0, time.monotonic() - self._on_since)
+                                       if self._on_since is not None else 0)
 
 # wrapper for blinka board
 class Board(object):
@@ -121,6 +141,8 @@ class TempSensorReal(TempSensor):
         TempSensor.__init__(self)
         self.sleeptime = self.time_step / float(config.temperature_average_samples)
         self.temptracker = TempTracker() 
+        self.last_good_read = None
+        self.last_error = None
         self.spi_setup()
         self.cs = digitalio.DigitalInOut(config.spi_cs)
 
@@ -142,13 +164,16 @@ class TempSensorReal(TempSensor):
             if config.temp_scale.lower() == "f":
                 temp = (temp*9/5)+32
             self.status.good()
+            self.last_error = None
             return temp
         except ThermocoupleError as tce:
             if tce.ignore:
                 log.error("Problem reading temp (ignored) %s" % (tce.message))
                 self.status.good()
             else:
-                log.error("Problem reading temp %s" % (tce.message))
+                if tce.message != self.last_error:
+                    log.error("Problem reading temp %s" % (tce.message))
+                    self.last_error = tce.message
                 self.status.bad()
         return None
 
@@ -156,11 +181,23 @@ class TempSensorReal(TempSensor):
         '''average temp over a duty cycle'''
         return self.temptracker.get_avg_temp()
 
+    def ready(self):
+        return (self.last_good_read is not None and
+                time.monotonic() - self.last_good_read <= self.time_step * 2 and
+                len(self.temptracker.temps) >= self.temptracker.size and
+                not self.status.over_error_limit())
+
     def run(self):
         while True:
-            temp = self.get_temperature()
-            if temp:
+            try:
+                temp = self.get_temperature()
+            except Exception:
+                log.exception("Thermocouple read failed")
+                self.status.bad()
+                temp = None
+            if temp is not None and math.isfinite(temp):
                 self.temptracker.add(temp)
+                self.last_good_read = time.monotonic()
             time.sleep(self.sleeptime)
 
 class TempTracker(object):
@@ -169,7 +206,7 @@ class TempTracker(object):
     '''
     def __init__(self):
         self.size = config.temperature_average_samples
-        self.temps = [0 for i in range(self.size)]
+        self.temps = []
   
     def add(self,temp):
         self.temps.append(temp)
@@ -181,7 +218,7 @@ class TempTracker(object):
         take the median of the given values. this used to take an avg
         after getting rid of outliers. median works better.
         '''
-        return statistics.median(self.temps)
+        return statistics.median(self.temps) if self.temps else 0
 
 class ThermocoupleTracker(object):
     '''Keeps sliding window to track successful/failed calls to get temp
@@ -331,14 +368,34 @@ class Oven(threading.Thread):
         self.daemon = True
         self.temperature = 0
         self.time_step = config.sensor_time_wait
+        self._restart_lock = threading.RLock()
+        self.last_firing_energy = None
         self.reset()
+        # Keep the final bill visible after a stopped/completed firing and reboot.
+        try:
+            with open(config.automatic_restart_state_file) as f:
+                previous = json.load(f)
+            if (isinstance(previous, dict) and previous.get('state') == 'IDLE' and previous.get('simulate') == config.simulate
+                    and self.valid_energy(previous.get('last_firing_energy'))):
+                self.last_firing_energy = previous['last_firing_energy']
+        except (OSError, ValueError, TypeError):
+            pass
 
     def reset(self):
         self.cost = 0
+        self.energy_kwh = 0.0
+        self.heater_on_seconds = 0.0
+        self.energy_history_estimated = False
+        self.energy_history_incomplete = False
+        self.energy_tracking_started_at = time.time()
+        self._simulated_on_seconds = 0.0
+        self._energy_output_baseline = self.output.seconds_on() if hasattr(self, 'output') else 0.0
         self.state = "IDLE"
         self.profile = None
         self.start_time = 0
         self.runtime = 0
+        self.run_started_at = None
+        self.elapsed_origin_known = True
         self.totaltime = 0
         self.target = 0
         self.heat = 0
@@ -363,6 +420,8 @@ class Oven(threading.Thread):
         # arbitrary number of samples
         # the time this covers changes based on a few things
         numtemps = 60
+        if self.heat_rate_temps and runtime - self.heat_rate_temps[-1][0] < 1:
+            return
         self.heat_rate_temps.append((runtime,temp))
          
         # drop old temps off the list
@@ -372,10 +431,39 @@ class Oven(threading.Thread):
         time1 = self.heat_rate_temps[0][0]
         temp2 = self.heat_rate_temps[-1][1]
         temp1 = self.heat_rate_temps[0][1]
-        if time2 > time1:
+        if time2 - time1 >= 10:
             self.heat_rate = ((temp2 - temp1) / (time2 - time1))*3600
 
-    def run_profile(self, profile, startat=0, allow_seek=True):
+    def record_history(self, force=False, finish=None):
+        history = getattr(self, 'firing_history', None)
+        if history is None:
+            return
+        with self._restart_lock:
+            try:
+                history_state = self.get_state()
+                if not self.pid.pidstats or self.runtime >= self.totaltime:
+                    history_state['target'] = None
+                history.capture(history_state, force=force, finish=finish)
+            except (OSError, ValueError) as exc:
+                history.error = 'Firing history could not be saved: ' + str(exc)
+                log.exception('Could not save firing history')
+
+    def run_profile(self, profile, startat=0, allow_seek=True, recovery=None):
+        with self._restart_lock:
+            if self.state in ('RUNNING', 'PAUSED'):
+                self.record_history(force=True, finish='replaced')
+            self._run_profile(profile, startat, allow_seek)
+            if recovery is not None:
+                origin = recovery.get('run_started_at')
+                if isinstance(origin, (int, float)) and math.isfinite(origin) and 0 < origin <= time.time():
+                    self.run_started_at = origin
+                    self.elapsed_origin_known = recovery.get('elapsed_origin_known', True)
+                else:
+                    self.elapsed_origin_known = False
+                self.restore_energy(recovery)
+            self.record_history(force=True)
+
+    def _run_profile(self, profile, startat=0, allow_seek=True):
         log.debug('run_profile run on thread' + threading.current_thread().name)
         runtime = startat * 60
         if allow_seek:
@@ -390,13 +478,22 @@ class Oven(threading.Thread):
         self.start_time = datetime.datetime.now() - datetime.timedelta(seconds=self.startat)
         self.profile = profile
         self.totaltime = profile.get_duration()
+        self.run_started_at = time.time()
         self.state = "RUNNING"
         log.info("Running schedule %s starting at %d minutes" % (profile.name,startat))
         log.info("Starting")
 
-    def abort_run(self):
-        self.reset()
-        self.save_automatic_restart_state()
+    def abort_run(self, reason="stopped"):
+        with self._restart_lock:
+            if hasattr(self, 'output'):
+                self.output.cool(0)
+            if self.state in ('RUNNING', 'PAUSED'):
+                self.update_cost()
+                self.record_history(force=True, finish=reason)
+                self.last_firing_energy = dict(self.energy_state(), profile=self.profile.name if self.profile else None,
+                                               finished_at=time.time())
+            self.reset()
+            self.save_automatic_restart_state()
 
     def get_start_time(self):
         return datetime.datetime.now() - datetime.timedelta(milliseconds = self.runtime * 1000)
@@ -438,27 +535,66 @@ class Oven(threading.Thread):
             config.emergency_shutoff_temp):
             log.info("emergency!!! temperature too high")
             if config.ignore_temp_too_high == False:
-                self.abort_run()
+                self.abort_run("over_temperature")
         
         if self.board.temp_sensor.status.over_error_limit():
             log.info("emergency!!! too many errors in a short period")
             if config.ignore_tc_too_many_errors == False:
-                self.abort_run()
+                self.abort_run("sensor_fault")
 
     def reset_if_schedule_ended(self):
         if self.runtime > self.totaltime:
             log.info("schedule ended, shutting down")
             log.info("total cost = %s%.2f" % (config.currency_type,self.cost))
-            self.abort_run()
+            self.abort_run("completed")
 
     def update_cost(self):
-        if self.heat:
-            cost = (config.kwh_rate * config.kw_elements) * ((self.heat)/3600)
+        # The output counter includes a pulse in progress and excludes all
+        # off-time. Sampling twice (e.g. two browsers) cannot double-charge.
+        with self._restart_lock:
+            total = self.output.seconds_on() if hasattr(self, 'output') else self._simulated_on_seconds
+            seconds = max(0.0, total - self._energy_output_baseline)
+            self._energy_output_baseline = total
+            if self.state in ('RUNNING', 'PAUSED'):
+                self.heater_on_seconds += seconds
+                energy = config.kw_elements * seconds / 3600.0
+                self.energy_kwh += energy
+                self.cost += energy * config.kwh_rate
+
+    def energy_state(self):
+        return dict(version=1, heater_on_seconds=self.heater_on_seconds,
+                    energy_kwh=self.energy_kwh, cost=self.cost,
+                    currency_type=config.currency_type,
+                    kw_elements=config.kw_elements, kwh_rate=config.kwh_rate,
+                    history_estimated=self.energy_history_estimated,
+                    history_incomplete=self.energy_history_incomplete,
+                    tracking_started_at=self.energy_tracking_started_at)
+
+    @staticmethod
+    def valid_energy(value):
+        return (isinstance(value, dict) and value.get('version') == 1 and
+                all(isinstance(value.get(k), (int, float)) and not isinstance(value[k], bool)
+                    and math.isfinite(value[k]) and value[k] >= 0
+                    for k in ('heater_on_seconds', 'energy_kwh', 'cost', 'tracking_started_at')) and
+                isinstance(value.get('currency_type'), str))
+
+    def restore_energy(self, saved):
+        energy = saved.get('energy_accounting')
+        if self.valid_energy(energy):
+            self.heater_on_seconds = energy['heater_on_seconds']
+            self.energy_kwh = energy['energy_kwh']
+            # Revalue at the configured tariff only if the currency changed.
+            self.cost = (energy['cost'] if energy['currency_type'] == config.currency_type
+                         else self.energy_kwh * config.kwh_rate)
+            self.energy_history_estimated = bool(energy.get('history_estimated'))
+            self.energy_history_incomplete = bool(energy.get('history_incomplete'))
+            self.energy_tracking_started_at = energy['tracking_started_at']
         else:
-            cost = 0
-        self.cost = self.cost + cost
+            # Old cost values counted pulses incorrectly and cannot be used.
+            self.energy_history_incomplete = True
 
     def get_state(self):
+        self.update_cost()
         temp = 0
         try:
             temp = self.board.temp_sensor.temperature() + config.thermocouple_offset
@@ -467,10 +603,18 @@ class Oven(threading.Thread):
             temp = 0
             pass
 
-        self.set_heat_rate(self.runtime,temp)
+        sensor_ready = config.simulate or self.board.temp_sensor.ready()
+        if sensor_ready:
+            self.set_heat_rate(time.monotonic(), temp)
+        else:
+            self.heat_rate_temps = []
+            self.heat_rate = 0
+        timestamp = time.time()
 
         state = {
             'cost': self.cost,
+            'energy_accounting': self.energy_state(),
+            'last_firing_energy': self.last_firing_energy,
             'runtime': self.runtime,
             'temperature': temp,
             'target': self.target,
@@ -481,14 +625,50 @@ class Oven(threading.Thread):
             'kwh_rate': config.kwh_rate,
             'currency_type': config.currency_type,
             'profile': self.profile.name if self.profile else None,
+            'profile_data': {'name': self.profile.name, 'data': self.profile.data} if self.profile else None,
             'pidstats': self.pid.pidstats,
             'catching_up': self.catching_up,
+            'sensor_ready': sensor_ready,
+            'simulate': config.simulate,
+            'timestamp': timestamp,
+            'run_started_at': self.run_started_at,
+            'elapsed_seconds': max(0, timestamp - self.run_started_at) if self.run_started_at else 0,
+            'elapsed_origin_known': self.elapsed_origin_known,
+            'heat_rate_ready': bool(len(self.heat_rate_temps) > 1 and
+                                    self.heat_rate_temps[-1][0] - self.heat_rate_temps[0][0] >= 10),
+            'kw_elements': config.kw_elements,
+            'history_error': getattr(getattr(self, 'firing_history', None), 'error', None),
         }
         return state
 
     def save_state(self):
-        with open(config.automatic_restart_state_file, 'w', encoding='utf-8') as f:
-            json.dump(self.get_state(), f, ensure_ascii=False, indent=4)
+        # A power cut must leave either the previous complete state or the
+        # new complete state, never a truncated JSON file.
+        path = config.automatic_restart_state_file
+        directory = os.path.dirname(os.path.abspath(path))
+        with self._restart_lock:
+            state = self.get_state()
+            state['saved_at'] = time.time()
+            state['temp_scale'] = config.temp_scale
+            state['simulate'] = config.simulate
+            if self.profile:
+                state['profile_data'] = {'name': self.profile.name,
+                                         'data': self.profile.data}
+            fd, temporary = tempfile.mkstemp(prefix='.kiln-state-', dir=directory)
+            try:
+                with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                    json.dump(state, f, ensure_ascii=False, indent=4, allow_nan=False)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(temporary, path)
+                directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+            finally:
+                if os.path.exists(temporary):
+                    os.unlink(temporary)
 
     def state_file_is_old(self):
         '''returns True is state files is older than 15 mins default
@@ -499,7 +679,7 @@ class Oven(threading.Thread):
             state_age = os.path.getmtime(config.automatic_restart_state_file)
             now = time.time()
             minutes = (now - state_age)/60
-            if(minutes <= config.automatic_restart_window):
+            if(0 <= minutes <= config.automatic_restart_window):
                 return False
         return True
 
@@ -517,27 +697,54 @@ class Oven(threading.Thread):
             duplog.info("automatic restart not possible. state file does not exist or is too old.")
             return False
 
-        with open(config.automatic_restart_state_file) as infile:
-            d = json.load(infile)
-        if d["state"] != "RUNNING":
-            duplog.info("automatic restart not possible. state = %s" % (d["state"]))
+        try:
+            with open(config.automatic_restart_state_file) as infile:
+                d = json.load(infile)
+            age = time.time() - d['saved_at']
+            if (d['state'] != 'RUNNING' or
+                    d['temp_scale'] != config.temp_scale or
+                    d['simulate'] != config.simulate or
+                    not 0 <= age <= config.automatic_restart_window * 60):
+                return False
+            if not all(isinstance(d[k], (int, float)) and not isinstance(d[k], bool)
+                       and math.isfinite(d[k]) and d[k] >= 0
+                       for k in ('runtime', 'cost')):
+                return False
+            profile = Profile(json.dumps(d['profile_data']))
+            if (profile.name != d['profile'] or len(profile.data) < 2 or
+                    profile.data[0][0] != 0 or
+                    not all(math.isfinite(t) and math.isfinite(v)
+                            for t, v in profile.data) or
+                    any(b[0] <= a[0] for a, b in zip(profile.data, profile.data[1:])) or
+                    not 0 <= d['runtime'] < profile.get_duration()):
+                return False
+        except (OSError, ValueError, KeyError, TypeError, IndexError):
+            duplog.error('Invalid restart state; leaving kiln idle.')
             return False
         return True
 
     def automatic_restart(self):
+        if not self.should_i_automatic_restart():
+            return
+        if not config.simulate and getattr(config, 'require_synced_clock_for_restart', False):
+            try:
+                sync = subprocess.run(['/usr/bin/chronyc', 'waitsync', '1'],
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                      timeout=3)
+                if sync.returncode != 0:
+                    return
+            except (OSError, subprocess.TimeoutExpired):
+                return
+        # Leave saved progress intact while waiting for valid sensor data.
+        if not config.simulate and not self.board.temp_sensor.ready():
+            return
         with open(config.automatic_restart_state_file) as infile: d = json.load(infile)
         startat = d["runtime"]/60
-        filename = "%s.json" % (d["profile"])
-        profile_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'storage','profiles',filename))
-
-        log.info("automatically restarting profile = %s at minute = %d" % (profile_path,startat))
-        with open(profile_path) as infile:
-            profile_json = json.dumps(json.load(infile))
-        profile = Profile(profile_json)
-        self.run_profile(profile, startat=startat, allow_seek=False)  # We don't want a seek on an auto restart.
-        self.cost = d["cost"]
-        time.sleep(1)
-        self.ovenwatcher.record(profile)
+        log.info("automatically restarting profile = %s at minute = %s", d['profile'], startat)
+        profile = Profile(json.dumps(d['profile_data']))
+        self.run_profile(profile, startat=startat, allow_seek=False, recovery=d)
+        if hasattr(self, 'ovenwatcher'):
+            self.ovenwatcher.record(profile)
 
     def set_ovenwatcher(self,watcher):
         log.info("ovenwatcher set in oven class")
@@ -552,6 +759,7 @@ class Oven(threading.Thread):
                 time.sleep(1)
                 continue
             if self.state == "PAUSED":
+                self.save_automatic_restart_state()
                 self.start_time = self.get_start_time()
                 self.update_runtime()
                 self.update_target_temp()
@@ -560,7 +768,6 @@ class Oven(threading.Thread):
                 self.reset_if_schedule_ended()
                 continue
             if self.state == "RUNNING":
-                self.update_cost()
                 self.save_automatic_restart_state()
                 self.kiln_must_catch_up()
                 self.update_runtime()
@@ -675,6 +882,8 @@ class SimulatedOven(Oven):
         # we don't actually spend time heating & cooling during
         # a simulation, so sleep.
         time.sleep(self.time_step / self.speedup_factor)
+        self._simulated_on_seconds += heat_on
+        self.update_cost()
 
 
 class RealOven(Oven):
@@ -682,7 +891,6 @@ class RealOven(Oven):
     def __init__(self):
         self.board = RealBoard()
         self.output = Output()
-        self.reset()
 
         # call parent init
         Oven.__init__(self)
@@ -691,10 +899,21 @@ class RealOven(Oven):
         self.start()
 
     def reset(self):
-        super().reset()
         self.output.cool(0)
+        super().reset()
 
     def heat_then_cool(self):
+        # A missing, failed, or stale thermocouple must never enable heat,
+        # including the first cycle after automatic recovery.
+        if (self.state not in ('RUNNING', 'PAUSED') or
+                not self.board.temp_sensor.ready()):
+            self.output.cool(0)
+            self.abort_run("sensor_fault")
+            time.sleep(self.time_step)
+            return
+        self.reset_if_emergency()
+        if self.state == 'IDLE':
+            return
         pid = self.pid.compute(self.target,
                                self.board.temp_sensor.temperature() +
                                config.thermocouple_offset, datetime.datetime.now())
@@ -776,7 +995,7 @@ class Profile():
         return (prev_point, next_point)
 
     def get_target_temperature(self, time):
-        if time > self.get_duration():
+        if time >= self.get_duration():
             return 0
 
         (prev_point, next_point) = self.get_surrounding_points(time)

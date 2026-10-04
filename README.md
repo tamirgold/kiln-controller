@@ -1,6 +1,20 @@
 Kiln Controller
 ==========
 
+Tamir's Orange Pi Zero 2W kiln controller, with a customized dashboard, firing
+history, electricity cost accounting, and settings interface. Based on
+[jbruce12000/kiln-controller](https://github.com/jbruce12000/kiln-controller), with
+the upstream history, attribution, and GPL license retained.
+
+Historical deployment records cover the [Orange Pi setup](docs/ORANGE-PI-SETUP.md),
+[relay module](docs/RELAY-MODULE-CHANGE.md), and [interface updates](docs/UI-UPDATE.md).
+Deployment-specific settings, firing records, and verification screenshots remain
+local. Live overrides in `settings.json` and `settings.pending.json` are not
+committed: the tracked source defaults use `gpio_heat_invert=False` and a two-second
+control cycle, while the documented deployment uses active-low output and a
+30-second cycle. Review the hardware configuration and required overrides before
+running on a kiln.
+
 Turns a Raspberry Pi into an inexpensive, web-enabled kiln controller.
 
 ## Features
@@ -68,7 +82,7 @@ Download [Raspberry PI OS](https://www.raspberrypi.org/software/). Use Rasberry 
 
     $ sudo apt-get update
     $ sudo apt-get dist-upgrade
-    $ git clone https://github.com/jbruce12000/kiln-controller
+    $ git clone https://github.com/tamirgold/kiln-controller
     $ cd kiln-controller
     $ python3 -m venv venv
     $ source venv/bin/activate
