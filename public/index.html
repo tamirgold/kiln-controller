@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#123f3a">
   <title>Kiln · Firing dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23174d41'/%3E%3Cpath d='M9 25V12a7 7 0 0 1 14 0v13H9zm4 0v-8h6v8M6 25h20' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/dashboard.css?v=20261005-zoom-1">
-  <script defer src="assets/js/dashboard.js?v=20261005-zoom-1"></script>
+  <link rel="stylesheet" href="assets/css/dashboard.css?v=20261005-adaptive-ramp-1">
+  <script defer src="assets/js/dashboard.js?v=20261005-adaptive-ramp-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to dashboard</a>
@@ -70,6 +70,11 @@
       <div class="progress-label"><span>Program progress</span><strong id="progress_label">0%</strong></div>
       <div class="progress-track" id="progress" role="progressbar" aria-label="Program progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress_fill"></span></div>
       <dl class="run-details"><div><dt>Program time</dt><dd id="program_time">00:00:00</dd></div><div><dt>Program time left</dt><dd id="program_left">—</dd></div><div><dt>Heating / cooling rate</dt><dd id="heat_rate">—</dd></div><div><dt>Sensor</dt><dd id="sensor_status">Connecting</dd></div></dl>
+      <section id="ramp_tracking" class="ramp-tracking" aria-labelledby="ramp_tracking_title" hidden>
+        <div class="ramp-tracking-heading"><h3 id="ramp_tracking_title">Ramp tracking</h3><span id="ramp_tracking_status" class="ramp-status" role="status"></span></div>
+        <dl class="ramp-tracking-values"><div><dt>Segment plan</dt><dd id="ramp_requested">—</dd></div><div><dt>Measured rate</dt><dd id="ramp_measured">—</dd></div><div><dt>Power adjustment</dt><dd id="ramp_adjustment" title="Percentage points of heater power">—</dd></div></dl>
+        <p id="ramp_tracking_detail"></p><p id="ramp_tracking_timing" class="ramp-timing"></p>
+      </section>
       <p class="context-note" id="progress_note">Elapsed time includes catch-up periods. Program time only advances with the firing schedule.</p>
     </aside>
   </div>

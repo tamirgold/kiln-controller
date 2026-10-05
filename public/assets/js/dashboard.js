@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id), finite=v=>typeof v==='number'&&Number.isFinite(v), clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const active=s=>s&&['RUNNING','PAUSED'].includes(s.state);
-const S={live:null,config:{},profiles:[],runProfile:null,history:[],historyOrigin:null,historyOriginKnown:true,programStart:null,showSkipped:false,zoom:null,lastStatus:0,sockets:{},ready:{},retries:{},mode:'comparison',selected:'',runKey:null,pendingState:null,pendingStorage:null,editorProfile:null,dirty:false,chart:null,confirm:null};
+const S={live:null,config:{},profiles:[],runProfile:null,history:[],historyOrigin:null,historyOriginKnown:true,programStart:null,showSkipped:false,zoom:null,lastStatus:0,rampCurrent:false,sockets:{},ready:{},retries:{},mode:'comparison',selected:'',runKey:null,pendingState:null,pendingStorage:null,editorProfile:null,dirty:false,chart:null,confirm:null};
 let drawPending=false,toastTimer,commandTimer,storageTimer,chartDrag=null;
 let firingOverview=null,historyLoading=null,loadedFiring=null;
 const hoursMinutes=s=>Math.floor(Math.max(0,s)/3600)+'h '+String(Math.floor(Math.max(0,s)/60)%60).padStart(2,'0')+'m';
@@ -39,14 +39,14 @@ function connection(){
  $('connection_notice').hidden=good||(!S.live&&performance.now()<10000);
  document.body.classList.toggle('offline',!good);
  if(!good)$('state_badge').textContent=S.live?'Connection lost':'Connecting';
- buttons();
+ renderRampTracking();buttons();
 }
 function connect(channel){
  const ws=new WebSocket((location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/'+channel);S.sockets[channel]=ws;
  ws.onopen=()=>{S.ready[channel]=true;S.retries[channel]=0;if(channel!=='status')ws.send('GET');else{loadedFiring=null;loadFiringHistory();}buttons();};
  ws.onmessage=e=>{let d;try{d=JSON.parse(e.data);}catch(_){return;}if(channel==='status')status(d);else if(channel==='config'){S.config=d;renderConfig();profileSummary();renderLive();}else storage(d);};
  ws.onerror=()=>ws.close();
- ws.onclose=()=>{S.ready[channel]=false;if(channel==='storage'&&S.pendingStorage){clearTimeout(storageTimer);S.pendingStorage=null;editorError('Connection lost. Check the program list after reconnecting before saving again.');}connection();S.retries[channel]=(S.retries[channel]||0)+1;setTimeout(()=>connect(channel),Math.min(10000,750*Math.pow(1.6,S.retries[channel])));};
+ ws.onclose=()=>{S.ready[channel]=false;if(channel==='status')S.rampCurrent=false;if(channel==='storage'&&S.pendingStorage){clearTimeout(storageTimer);S.pendingStorage=null;editorError('Connection lost. Check the program list after reconnecting before saving again.');}connection();S.retries[channel]=(S.retries[channel]||0)+1;setTimeout(()=>connect(channel),Math.min(10000,750*Math.pow(1.6,S.retries[channel])));};
 }
 function rememberProgramStart(d){
  // The controller force-saves the chosen program position at firing start.
@@ -79,7 +79,7 @@ function status(d){
  if(key){S.runKey=key;S.historyOrigin=finite(d.run_started_at)?d.run_started_at:null;S.historyOriginKnown=d.elapsed_origin_known!==false;}
  if(active(d))addHistory(d);
  if(validProfile(d.profile_data))S.runProfile=d.profile_data;
- S.live=d;S.lastStatus=performance.now();
+ S.live=d;S.lastStatus=performance.now();S.rampCurrent=true;
  if(S.pendingState&&d.state===S.pendingState){clearTimeout(commandTimer);S.pendingState=null;}
  if(!S.selected&&d.profile&&S.profiles.some(p=>p.name===d.profile)){S.selected=d.profile;$('profile_select').value=d.profile;profileSummary();}
  renderLive();connection();queueDraw();loadFiringHistory();
@@ -112,7 +112,30 @@ function renderLive(){
  $('phase_detail').textContent=next?(next[1]===prev[1]?'Hold at ':next[1]>prev[1]?'Ramp toward ':'Cool toward ')+num(next[1],0)+unit():running?'Following the selected schedule':'Choose a program below';
  $('progress_note').textContent=d.state==='PAUSED'?'Paused: the controller maintains temperature. Elapsed firing time continues counting.':d.catching_up&&running?'Program progress waits while the kiln catches up. Elapsed firing time keeps counting.':'Program time left excludes additional catch-up periods; it is not an exact finish estimate.';
  $('heat_rate').textContent=ready&&d.heat_rate_ready&&finite(d.heat_rate)?(d.heat_rate>0?'+':'')+rateText(d.heat_rate):'Collecting readings';
- tick();buttons();
+ renderRampTracking();tick();buttons();
+}
+function renderRampTracking(){
+ const d=S.live,r=d&&d.ramp_control,root=$('ramp_tracking');
+ root.hidden=!active(d)||!r||typeof r.enabled!=='boolean';if(root.hidden)return;
+ const current=fresh()&&S.ready.status&&S.rampCurrent,paused=d.state==='PAUSED'||r.status==='paused',fault=d.sensor_ready===false||r.status==='sensor_fault';
+ const state=!r.enabled?'disabled':fault?'sensor_fault':paused?'paused':r.status;
+ const labels={disabled:'Off',collecting:'Collecting',confirming:'Checking rate',tracking:'On rate',correcting:'Adjusting',temperature_priority:'Temperature first',correction_limit:'Correction limit',power_limit:'Power limit',hold:'Hold',paused:'Paused',idle:'Waiting',sensor_fault:'Sensor unavailable'};
+ const signedRate=value=>finite(value)?(value>0?'+':'')+rateText(value):'—';
+ const minimum=finite(r.minimum_window_seconds)?axisTime(r.minimum_window_seconds):null;
+ const interval=finite(r.check_interval_seconds)?axisTime(r.check_interval_seconds):null;
+ let detail={disabled:'Automatic ramp correction is off. Temperature control continues.',collecting:minimum?'Measuring this segment. Correction starts after at least '+minimum+' of readings.':'Collecting enough readings to measure this segment.',confirming:'Waiting for another check to confirm the rate difference before changing power.',tracking:'The measured rate is within the allowed range for this segment.',correcting:'Adjusting heater power to bring the measured rate closer to this segment’s plan.',temperature_priority:'The temperature target takes priority over ramp correction.',correction_limit:'The automatic power adjustment has reached its allowed limit. Normal temperature control continues.',power_limit:r.phase==='cooling'&&finite(r.output_percent)&&r.output_percent<=0?'Heater off. Cooling is limited by the kiln’s natural heat loss.':'At a power limit. The kiln may be unable to match this ramp.',hold:'Holding temperature. Ramp correction is not applied.',paused:'Program paused. Temperature is maintained; ramp correction is not applied.',idle:'Waiting for a ramp segment.',sensor_fault:'Sensor unavailable. Ramp correction is suspended.'}[state]||'Waiting for ramp tracking status.';
+ if(['tracking','correcting','temperature_priority','power_limit'].includes(state)&&r.phase==='cooling')detail+=' Positive adjustment slows cooling; negative adjustment reduces heat.';
+ else if(['tracking','correcting'].includes(state))detail+=' Positive adjustment adds heat; negative adjustment reduces heat.';
+ root.classList.toggle('is-stale',!current);root.setAttribute('data-status',state||'unknown');
+ $('ramp_tracking_status').textContent=current?(labels[state]||'Waiting'):'Last reported';
+ $('ramp_requested').textContent=paused?'Paused':r.phase==='hold'?'Hold':signedRate(r.requested_rate);
+ $('ramp_measured').textContent=fault?'Unavailable':finite(r.measured_rate)?signedRate(r.measured_rate):state==='collecting'?'Collecting':'—';
+ const trim=finite(r.applied_trim_percent)?r.applied_trim_percent:null;
+ $('ramp_adjustment').textContent=trim===null?'—':(trim>0?'+':'')+num(trim,1)+' pp';
+ $('ramp_adjustment').setAttribute('aria-label',trim===null?'Power adjustment unavailable':num(trim,1)+' percentage points of heater power');
+ $('ramp_tracking_detail').textContent=current?detail:'Live status unavailable. Showing the last reported values.';
+ const observed=finite(r.window_seconds)&&r.window_seconds>0?axisTime(r.window_seconds):null;
+ $('ramp_tracking_timing').textContent=!current?'Waiting for fresh readings.':state==='collecting'&&minimum?(observed||'0m')+' of '+minimum+' minimum measured':observed?'Measured over '+observed+(r.enabled&&interval?' · checks every '+interval:''):r.enabled&&interval?'Checks every '+interval:'';
 }
 function renderCost(){
  const d=S.live;if(!d)return;

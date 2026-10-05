@@ -12,6 +12,7 @@ import statistics
 import math
 import tempfile
 import subprocess
+from lib.ramp_control import RampController
 
 log = logging.getLogger(__name__)
 
@@ -180,6 +181,11 @@ class TempSensorReal(TempSensor):
     def temperature(self):
         '''average temp over a duty cycle'''
         return self.temptracker.get_avg_temp()
+
+    def cycle_temperature(self):
+        '''Mean of the full sensor window for slow ramp-rate estimation.'''
+        readings = self.temptracker.temps[:]
+        return statistics.mean(readings) if readings else None
 
     def ready(self):
         return (self.last_good_read is not None and
@@ -403,6 +409,8 @@ class Oven(threading.Thread):
         self.heat_rate_temps = []
         self.pid = PID(ki=config.pid_ki, kd=config.pid_kd, kp=config.pid_kp)
         self.catching_up = False
+        self.ramp_control = RampController()
+        self._ramp_elapsed = 0.0
 
     @staticmethod
     def get_start_from_temperature(profile, temp):
@@ -534,6 +542,47 @@ class Oven(threading.Thread):
     def update_target_temp(self):
         self.target = self.profile.get_target_temperature(self.runtime)
 
+    def controlled_heat_duty(self, pid_now, elapsed_now):
+        """Run the existing temperature PID, then bounded slow rate feedback."""
+        sensor = self.board.temp_sensor
+        temperature = sensor.temperature() + config.thermocouple_offset
+        integral_before = self.pid.iterm
+        base = self.pid.compute(self.target, temperature, pid_now)
+        rate_temperature = sensor.cycle_temperature() if hasattr(sensor, 'cycle_temperature') else temperature
+        if rate_temperature is not None and hasattr(sensor, 'cycle_temperature'):
+            rate_temperature += config.thermocouple_offset
+        previous, following = self.profile.get_surrounding_points(self.runtime) if self.profile else (None, None)
+        segment = (*previous, *following) if previous is not None and following is not None else None
+        enabled = getattr(config, 'automatic_ramp_control', False)
+        maximum = 1.0
+        if config.throttle_below_temp and config.throttle_percent and self.target <= config.throttle_below_temp:
+            # Preserve existing PID behavior inside its window, while never
+            # allowing the new correction to exceed the low-temperature cap.
+            maximum = max(base, config.throttle_percent / 100)
+        output = self.ramp_control.update(now=elapsed_now, temperature=rate_temperature,
+            control_temperature=temperature, target=self.target, segment=segment,
+            pid_output=base, enabled=enabled, state=self.state,
+            sensor_ready=config.simulate or sensor.ready(),
+            tolerance=getattr(config, 'catch_up_tolerance', 0) or config.pid_control_window,
+            control_window=config.pid_control_window, max_output=maximum,
+            scale=1.8 if config.temp_scale.lower() == 'f' else 1.0)
+        report = self.ramp_control.snapshot()
+        # Preserve the existing PID integration unless the added rate trim
+        # causes saturation. Do not retune baseline PID behavior implicitly.
+        integral_delta = self.pid.iterm - integral_before
+        held = (enabled and report['phase'] in ('heating', 'cooling') and
+                ((output >= maximum - 1e-9 and output > base + 1e-9 and integral_delta > 0) or
+                 (output <= 1e-9 and output < base - 1e-9 and integral_delta < 0)))
+        if held:
+            self.pid.iterm = integral_before
+            self.pid.pidstats['i'] = integral_before
+        self.pid.pidstats.update(base_out=base, out=output,
+                                 ramp_trim=report['applied_trim_percent'], integral_held=held)
+        if enabled and report['status'] == 'correcting':
+            log.info('ramp control: requested=%.2f/h measured=%.2f/h adjustment=%+.2f%% output=%.2f%%',
+                     report['requested_rate'], report['measured_rate'], report['applied_trim_percent'], output * 100)
+        return output
+
     def reset_if_emergency(self):
         '''reset if the temperature is way TOO HOT, or other critical errors detected'''
         if (self.board.temp_sensor.temperature() + config.thermocouple_offset >=
@@ -632,6 +681,7 @@ class Oven(threading.Thread):
             'profile': self.profile.name if self.profile else None,
             'profile_data': {'name': self.profile.name, 'data': self.profile.data} if self.profile else None,
             'pidstats': self.pid.pidstats,
+            'ramp_control': self.ramp_control.snapshot(),
             'catching_up': self.catching_up,
             'sensor_ready': sensor_ready,
             'simulate': config.simulate,
@@ -844,9 +894,8 @@ class SimulatedOven(Oven):
 
     def heat_then_cool(self):
         now_simulator = self.start_time + datetime.timedelta(milliseconds = self.runtime * 1000)
-        pid = self.pid.compute(self.target,
-                               self.board.temp_sensor.temperature() +
-                               config.thermocouple_offset, now_simulator)
+        pid = self.controlled_heat_duty(now_simulator, self._ramp_elapsed)
+        self._ramp_elapsed += self.time_step
 
         heat_on = float(self.time_step * pid)
         heat_off = float(self.time_step * (1 - pid))
@@ -919,9 +968,7 @@ class RealOven(Oven):
         self.reset_if_emergency()
         if self.state == 'IDLE':
             return
-        pid = self.pid.compute(self.target,
-                               self.board.temp_sensor.temperature() +
-                               config.thermocouple_offset, datetime.datetime.now())
+        pid = self.controlled_heat_duty(datetime.datetime.now(), time.monotonic())
 
         heat_on = float(self.time_step * pid)
         heat_off = float(self.time_step * (1 - pid))

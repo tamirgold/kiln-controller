@@ -201,6 +201,10 @@ kiln_must_catch_up = True
 # value to keep these waits independent while tuning the PID control window.
 catch_up_tolerance = 0
 
+# Periodic, bounded power correction from the active segment's measured ramp.
+# Requires several minutes of fresh readings; never changes program timing.
+automatic_ramp_control = False
+
 # This setting is required. 
 # This setting defines the window within which PID control occurs.
 # Outside this window (N degrees below or above the current target)

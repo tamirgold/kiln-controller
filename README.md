@@ -178,7 +178,7 @@ For the photographed 8 kW kiln, one hour of heater on-time costs **₪5.16** at 
 energy; an hour of elapsed firing time may include many off periods. Accounting follows actual
 controller-output on-time, including a pulse in progress, and preserves totals across eligible recovery.
 
-This is a rated-power estimate, not a mains meter. The heater percentage is the PID's requested duty, not
+This is a rated-power estimate, not a mains meter. The heater percentage is the final commanded duty, including any ramp correction, not
 confirmation that relay contacts or elements are on. Partial totals and earlier values reconstructed from logs
 are labeled explicitly.
 
@@ -233,7 +233,7 @@ intervals, limits, and storage paths.
 | Category | Fields | What it controls |
 | --- | ---: | --- |
 | Electricity & display | 6 | Installed power, tariff, currency, temperature/time/rate units |
-| Firing behavior | 5 | Warm-start seek, catch-up, cycle length, low-temperature throttle |
+| Firing behavior | 7 | Warm-start seek, catch-up and tolerance, automatic ramp correction, cycle length, low-temperature throttle |
 | PID control | 4 | Kp, inverse Ki, Kd, control window |
 | Sensor & wiring | 12 | Calibration, sampling, converter/type/filter, GPIO pins, polarity |
 | Power-loss recovery | 3 | Enable recovery, maximum delay, clock synchronization |
@@ -312,6 +312,13 @@ Set a positive catch-up tolerance when tuning the controller so a wider PID
 window does not loosen temperature waits during ramps or holds. Tune gains for
 the kiln and its relay period; shortening a mechanical relay's cycle is not a
 substitute for tuning. See [the recorded ramp-tuning example](docs/ramp-tuning-20261005.md).
+
+**Automatically correct ramp speed** compares a multi-minute temperature trend
+with the active segment once a minute and applies bounded heater-power corrections.
+The Ramp tracking panel shows the requested and measured rates, applied adjustment,
+and any limiting condition. It preserves temperature waits, holds, relay timing,
+and the original planned graph. See [automatic ramp control](docs/automatic-ramp-control.md)
+for measurement timing, limits and diagnostics.
 
 Automatic recovery restores saved program progress after an eligible interruption. It requires a recent valid
 **RUNNING** record, matching mode and units, valid schedule progress, a ready sensor, and synchronized Chrony
