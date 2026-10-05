@@ -312,6 +312,9 @@ Set a positive catch-up tolerance when tuning the controller so a wider PID
 window does not loosen temperature waits during ramps or holds. Tune gains for
 the kiln and its relay period; shortening a mechanical relay's cycle is not a
 substitute for tuning. See [the recorded ramp-tuning example](docs/ramp-tuning-20261005.md).
+The [high-temperature follow-up](docs/high-temperature-smoothing-20261005.md)
+documents gentler gains and retaining a recent integral bias across a brief,
+healthy recovery to reduce cycling and restart dips.
 
 **Automatically correct ramp speed** compares a multi-minute temperature trend
 with the active segment once a minute and applies bounded heater-power corrections.

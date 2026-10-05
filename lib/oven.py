@@ -798,8 +798,53 @@ class Oven(threading.Thread):
         log.info("automatically restarting profile = %s at minute = %s", d['profile'], startat)
         profile = Profile(json.dumps(d['profile_data']))
         self.run_profile(profile, startat=startat, allow_seek=False, recovery=d)
+        self.restore_pid_bias(d)
         if hasattr(self, 'ovenwatcher'):
             self.ovenwatcher.record(profile)
+
+    def restore_pid_bias(self, recovery):
+        """Keep a recent heat-loss estimate through a brief, healthy restart.
+
+        The integral is duty percentage points, independent of PID gains.
+        Old output, derivative history and ramp corrections are never replayed.
+        Ordinary sensor, temperature and output checks still decide all heating.
+        """
+        try:
+            stats = recovery['pidstats']
+            numbers = [recovery['saved_at'], stats['time'], stats['i'], stats['out'],
+                       stats['ispoint'], stats['setpoint'], stats['err']]
+            if not all(type(value) in (int, float) and math.isfinite(value) for value in numbers):
+                return False
+            if (self.state != 'RUNNING' or recovery['state'] != 'RUNNING' or
+                    recovery['sensor_ready'] is not True or recovery['simulate'] != config.simulate or
+                    recovery['temp_scale'] != config.temp_scale or self.profile is None or
+                    recovery['profile_data'] != {'name': self.profile.name, 'data': self.profile.data} or
+                    not 0 <= time.time() - recovery['saved_at'] <= 3 * self.time_step or
+                    not 0 <= recovery['saved_at'] - stats['time'] <= 2 * self.time_step or
+                    not 0 <= stats['i'] <= 100 or not 0 < stats['out'] <= 1 or
+                    abs(stats['err']) > config.pid_control_window):
+                return False
+            sensor = self.board.temp_sensor
+            if not config.simulate and not sensor.ready():
+                return False
+            reading = sensor.temperature()
+            if not all(type(value) in (int, float) and math.isfinite(value)
+                       for value in (reading, self.target)):
+                return False
+            temperature = reading + config.thermocouple_offset
+            error = self.target - temperature
+            if (not math.isfinite(temperature) or not math.isfinite(error) or
+                    temperature >= config.emergency_shutoff_temp or
+                    abs(temperature - stats['ispoint']) > config.pid_control_window or
+                    abs(error) > config.pid_control_window):
+                return False
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return False
+        self.pid.iterm = stats['i']
+        self.pid.lastErr = error
+        self.pid.lastNow = datetime.datetime.now() - datetime.timedelta(seconds=self.time_step)
+        log.info('Restored recent temperature-control integral bias %.2f%%', self.pid.iterm)
+        return True
 
     def set_ovenwatcher(self,watcher):
         log.info("ovenwatcher set in oven class")
