@@ -15,6 +15,7 @@ def kiln(tmp_path, monkeypatch):
     monkeypatch.setattr(config, 'seek_start', False)
     monkeypatch.setattr(config, 'kiln_must_catch_up', True)
     monkeypatch.setattr(config, 'pid_control_window', 3)
+    monkeypatch.setattr(config, 'catch_up_tolerance', 0)
     monkeypatch.setattr(config, 'thermocouple_offset', 0)
     sensor = SimpleNamespace(temperature=Mock(return_value=20), ready=Mock(return_value=True),
                              status=SimpleNamespace(over_error_limit=Mock(return_value=False)))
@@ -63,6 +64,58 @@ def test_catchup_waits_only_when_behind_ramp_or_outside_hold(kiln, monkeypatch, 
     assert kiln.start_time == (shifted_start if wait else original_start)
     assert shift.call_count == int(wait)
     assert kiln.runtime == runtime
+
+
+@pytest.mark.parametrize('runtime,error,wait', [
+    (300, -4, True), (300, -3, False), (300, 4, False),
+    (750, -4, True), (750, -3, False), (750, 3, False), (750, 4, True),
+    (1200, -4, False), (1200, 3, False), (1200, 4, True),
+])
+def test_explicit_catchup_tolerance_preserves_waits_with_wider_pid_window(
+        kiln, monkeypatch, runtime, error, wait):
+    monkeypatch.setattr(config, 'pid_control_window', 20)
+    monkeypatch.setattr(config, 'catch_up_tolerance', 3)
+    kiln.runtime = runtime
+    kiln.update_target_temp()
+    kiln.board.temp_sensor.temperature.return_value = kiln.target + error
+
+    kiln.kiln_must_catch_up()
+
+    assert kiln.catching_up is wait
+
+
+@pytest.mark.parametrize('configured', [False, True])
+def test_legacy_or_zero_catchup_tolerance_follows_pid_window(kiln, monkeypatch, configured):
+    if not configured:
+        monkeypatch.delattr(config, 'catch_up_tolerance')
+    kiln.runtime = 750
+    kiln.update_target_temp()
+    kiln.board.temp_sensor.temperature.return_value = kiln.target - 4
+
+    monkeypatch.setattr(config, 'pid_control_window', 5)
+    kiln.kiln_must_catch_up()
+    assert not kiln.catching_up
+    monkeypatch.setattr(config, 'pid_control_window', 3)
+    kiln.kiln_must_catch_up()
+    assert kiln.catching_up
+
+
+def test_catchup_tolerance_does_not_change_pid_output_window(kiln, monkeypatch):
+    monkeypatch.setattr(config, 'pid_control_window', 20)
+    monkeypatch.setattr(config, 'catch_up_tolerance', 3)
+    # A 4-degree deficit pauses the program, but stays within proportional
+    # control instead of forcing a full 30-second heating pulse.
+    kiln.runtime = 300
+    kiln.update_target_temp()
+    kiln.board.temp_sensor.temperature.return_value = kiln.target - 4
+    kiln.pid.kp = 2
+    kiln.pid.kd = 0
+    kiln.kiln_must_catch_up()
+    output = kiln.pid.compute(kiln.target, kiln.target - 4,
+                              kiln.pid.lastNow + datetime.timedelta(seconds=30))
+
+    assert kiln.catching_up
+    assert 0 < output < 1
 
 
 def test_heating_overshoot_advances_without_requesting_heat(kiln):

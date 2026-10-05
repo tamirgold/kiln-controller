@@ -41,7 +41,9 @@ def test_schema_covers_all_config_values():
     {'thermocouple_type':'J'},{'gpio_heat':'PH5'},{'gpio_heat':'__import__("os")'},
     {'automatic_restart_state_file':'../../outside.json'},{'kiln_profiles_directory':'/etc'},
     {'automatic_restart_state_file':'settings.json'},{'log_format':'%(unknown)s'},
-    {'emergency_shutoff_temp':2000},{'currency_type':'x\n'}, {'made_up':42}
+    {'emergency_shutoff_temp':2000},{'currency_type':'x\n'}, {'made_up':42},
+    {'catch_up_tolerance':-1},{'catch_up_tolerance':float('nan')},
+    {'catch_up_tolerance':True},{'catch_up_tolerance':1001}
 ])
 def test_invalid_values_do_not_write_any_settings(settings,change):
     store,_=settings
@@ -54,6 +56,53 @@ def test_save_is_staged_and_recovery_does_not_activate_it(settings):
     assert store.desired()['kwh_rate']==.7 and store.current==original
     fresh=dict(vars(module));load_overrides(fresh)
     assert fresh['kwh_rate']==original['kwh_rate']
+
+
+@pytest.mark.parametrize('tolerance', [0, .1, 2.7777777778, 1000])
+def test_catchup_tolerance_accepts_zero_and_finite_positive_values(settings, tolerance):
+    store,_=settings
+    values=validate({'catch_up_tolerance':tolerance},store.current,store.root)
+    assert values['catch_up_tolerance']==tolerance
+
+
+def test_older_active_settings_inherit_compatible_catchup_default(settings):
+    store,module=settings
+    previous=dict(store.current,pid_control_window=7)
+    del previous['catch_up_tolerance']
+    atomic_json(store.active,{'version':1,'values':previous})
+
+    fresh=dict(vars(module));load_overrides(fresh)
+
+    assert fresh['pid_control_window']==7
+    assert fresh['catch_up_tolerance']==0
+
+
+def test_older_pending_settings_inherit_and_preserve_catchup_default(settings):
+    store,_=settings
+    previous=dict(store.current,pid_control_window=7)
+    del previous['catch_up_tolerance']
+    atomic_json(store.pending,{'version':1,'values':previous})
+
+    assert store.desired()['catch_up_tolerance']==0
+    applied=store.apply(store.revision())
+
+    assert applied['pid_control_window']==7
+    assert applied['catch_up_tolerance']==0
+    assert json.loads(store.active.read_text())['values']['catch_up_tolerance']==0
+
+
+@pytest.mark.parametrize('current_units,pending_units,tolerance,expected', [
+    ('c','f',3,5.4), ('f','c',5.4,3), ('c','f',0,0),
+])
+def test_older_pending_unit_change_converts_inherited_tolerance(
+        settings,current_units,pending_units,tolerance,expected):
+    store,_=settings
+    store.current.update(temp_scale=current_units,catch_up_tolerance=tolerance)
+    previous=dict(store.current,temp_scale=pending_units)
+    del previous['catch_up_tolerance']
+    atomic_json(store.pending,{'version':1,'values':previous})
+
+    assert store.desired()['catch_up_tolerance']==pytest.approx(expected)
 
 def test_apply_persists_values_and_backup_without_editing_base(settings):
     store,module=settings

@@ -28,8 +28,9 @@ field('temp_scale','Temperature units','general','select',help='Changing units c
 field('time_scale_profile','Schedule editor time units','general','select',options={'s':'Seconds','m':'Minutes','h':'Hours'})
 field('time_scale_slope','Heating / cooling rate units','general','select',options={'s':'Degrees per second','m':'Degrees per minute','h':'Degrees per hour'})
 field('seek_start','Skip initial schedule when kiln is warm','firing','boolean',help='A new firing can start at the matching temperature in its schedule.')
-field('kiln_must_catch_up','Wait for temperature before advancing','firing','boolean',help='Waits when too cold on heating ramps, too hot on cooling ramps, or outside the control window during holds. PID still controls heating when the program advances.')
-field('sensor_time_wait','Control cycle (seconds)','firing',help='One complete heater on/off cycle. Shorter cycles switch the SSR more often.',minimum=.5,maximum=30)
+field('kiln_must_catch_up','Wait for temperature before advancing','firing','boolean',help='Waits when too cold on heating ramps, too hot on cooling ramps, or outside the catch-up tolerance during holds. PID still controls heating when the program advances.')
+field('catch_up_tolerance','Catch-up temperature tolerance','firing',help='Temperature difference allowed before the schedule waits. Zero uses the PID control window. A positive value keeps temperature waits independent of PID tuning.',minimum=0,maximum=1000)
+field('sensor_time_wait','Control cycle (seconds)','firing',help='One complete heater on/off cycle. Shorter cycles switch the relay more often. Choose a cycle suitable for the installed relay.',minimum=.5,maximum=30)
 field('throttle_below_temp','Low-temperature throttle threshold','firing',help='Temperature below which the warm-up output limit applies.',minimum=-100,maximum=3500)
 field('throttle_percent','Low-temperature output limit (%)','firing',help='100 allows full power. Applies below the throttle threshold when outside the PID window.',minimum=1,maximum=100)
 field('pid_kp','Proportional gain (Kp)','pid',help='Response to the current temperature error.',minimum=0,maximum=100000)
@@ -67,7 +68,7 @@ field('stop_integral_windup','Legacy integral windup flag','legacy','boolean',re
 INDEX={f['key']:f for f in SCHEMA}
 ENV_KEYS={'simulate':'KILN_SIMULATE','listening_port':'KILN_PORT','automatic_restart_state_file':'KILN_STATE_FILE'}
 ABS_TEMP=['emergency_shutoff_temp','throttle_below_temp','sim_t_env']
-DELTA_TEMP=['thermocouple_offset','pid_control_window']
+DELTA_TEMP=['thermocouple_offset','pid_control_window','catch_up_tolerance']
 
 class SettingsError(ValueError):
     def __init__(self,message,errors=None):super().__init__(message);self.errors=errors or {}
@@ -199,7 +200,14 @@ class Store:
         raw=b''.join(p.read_bytes() if p.exists() else b'-' for p in (self.active,self.pending))
         return hashlib.sha256(raw+json.dumps(self.current,sort_keys=True).encode()).hexdigest()
     def desired(self):
-        return json.loads(self.pending.read_text())['values'] if self.pending.exists() else dict(self.current)
+        # New fields inherit their current defaults when an older pending
+        # document predates them, just as active settings do during loading.
+        values=dict(self.current)
+        if self.pending.exists():
+            pending=json.loads(self.pending.read_text())['values'];values.update(pending)
+            if 'catch_up_tolerance' not in pending and values['temp_scale']!=self.current['temp_scale']:
+                values['catch_up_tolerance']*=1.8 if values['temp_scale']=='f' else 1/1.8
+        return values
     def schema(self):
         fields=copy.deepcopy(SCHEMA)
         for f in fields:

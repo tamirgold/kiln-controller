@@ -512,8 +512,9 @@ class Oven(threading.Thread):
 
         temp = self.board.temp_sensor.temperature() + config.thermocouple_offset
         direction = following[1] - previous[1]
-        too_cold = self.target - temp > config.pid_control_window
-        too_hot = temp - self.target > config.pid_control_window
+        tolerance = getattr(config, 'catch_up_tolerance', 0) or config.pid_control_window
+        too_cold = self.target - temp > tolerance
+        too_hot = temp - self.target > tolerance
         # An upward ramp can catch up with an overshoot by advancing its
         # target. PID still switches heat off when temperature is too high.
         # Holds wait on both sides; cooling ramps wait only when too hot.

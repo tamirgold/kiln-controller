@@ -192,9 +192,14 @@ time_scale_profile  = "m" # s = Seconds | m = Minutes | h = Hours - Enter and vi
 emergency_shutoff_temp = 1240 # Celsius; equivalent to upstream 2264 F
 
 # Delay heating ramps when too cold, cooling ramps when too hot, and
-# holds on either side of the pid control window. A ramp may advance
+# holds on either side of the catch-up tolerance. A ramp may advance
 # when temperature is already ahead of its target; PID still limits heat.
 kiln_must_catch_up = True
+
+# Temperature difference allowed before the schedule waits. Zero follows
+# pid_control_window for compatibility with existing settings. Set a positive
+# value to keep these waits independent while tuning the PID control window.
+catch_up_tolerance = 0
 
 # This setting is required. 
 # This setting defines the window within which PID control occurs.

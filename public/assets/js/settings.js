@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 let data=null,draft={},section='general',busy=false,lastSeen=0,reviewAction=null,reviewSnapshot=null,toastTimer;
 const descriptions={general:'Power, electricity pricing and the units shown throughout your dashboard.',firing:'How the controller follows a schedule and limits low-temperature heating.',pid:'Tune temperature response for your kiln. Units follow the selected temperature scale.',sensor:'Thermocouple configuration and the physical pins used by your Orange Pi.',recovery:'Choose when a saved firing can resume after a power interruption.',protection:'These settings change how the controller responds to temperature and sensor faults.',system:'Web access, diagnostics and the files used to store programs and recovery state.',simulation:'Values for the virtual kiln. They do not describe the physical kiln when simulation is off.',legacy:'Retained configuration values that the current controller no longer uses.'};
-const absTemps=['emergency_shutoff_temp','throttle_below_temp','sim_t_env'],deltaTemps=['thermocouple_offset','pid_control_window'];
+const absTemps=['emergency_shutoff_temp','throttle_below_temp','sim_t_env'],deltaTemps=['thermocouple_offset','pid_control_window','catch_up_tolerance'];
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const dirty=()=>data&&!equal(draft,data.values);
 const fresh=()=>Date.now()-lastSeen<12000;

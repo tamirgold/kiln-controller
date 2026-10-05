@@ -306,6 +306,13 @@ target; PID still controls heater output. Warm-start seek can skip initial sched
 a warm kiln. Low-temperature throttling limits requested power
 outside the PID window when the target is below its threshold.
 
+**Catch-up temperature tolerance** can be set independently of the **PID control
+window**. Zero keeps the earlier behavior of using the PID window for both.
+Set a positive catch-up tolerance when tuning the controller so a wider PID
+window does not loosen temperature waits during ramps or holds. Tune gains for
+the kiln and its relay period; shortening a mechanical relay's cycle is not a
+substitute for tuning. See [the recorded ramp-tuning example](docs/ramp-tuning-20261005.md).
+
 Automatic recovery restores saved program progress after an eligible interruption. It requires a recent valid
 **RUNNING** record, matching mode and units, valid schedule progress, a ready sensor, and synchronized Chrony
 time when configured. Outage time does not advance the program or accrue energy. Paused, stopped, completed,
