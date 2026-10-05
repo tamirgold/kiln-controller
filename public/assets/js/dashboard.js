@@ -2,8 +2,8 @@
 'use strict';
 const $=id=>document.getElementById(id), finite=v=>typeof v==='number'&&Number.isFinite(v), clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const active=s=>s&&['RUNNING','PAUSED'].includes(s.state);
-const S={live:null,config:{},profiles:[],runProfile:null,history:[],lastStatus:0,sockets:{},ready:{},retries:{},mode:'program',selected:'',runKey:null,pendingState:null,pendingStorage:null,editorProfile:null,dirty:false,chart:null,confirm:null};
-let drawPending=false,toastTimer,commandTimer,storageTimer;
+const S={live:null,config:{},profiles:[],runProfile:null,history:[],historyOrigin:null,historyOriginKnown:true,programStart:null,showSkipped:false,zoom:null,lastStatus:0,sockets:{},ready:{},retries:{},mode:'comparison',selected:'',runKey:null,pendingState:null,pendingStorage:null,editorProfile:null,dirty:false,chart:null,confirm:null};
+let drawPending=false,toastTimer,commandTimer,storageTimer,chartDrag=null;
 let firingOverview=null,historyLoading=null,loadedFiring=null;
 const hoursMinutes=s=>Math.floor(Math.max(0,s)/3600)+'h '+String(Math.floor(Math.max(0,s)/60)%60).padStart(2,'0')+'m';
 const num=(v,d=1)=>finite(v)?v.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
@@ -12,7 +12,12 @@ const timeFactor=scale=>({s:1,m:60,h:3600}[scale]||60);
 const timeWord=scale=>({s:'seconds',m:'minutes',h:'hours'}[scale]||'minutes');
 const rateText=rate=>num(rate*timeFactor(S.config.time_scale_slope||'h')/3600,(S.config.time_scale_slope||'h')==='h'?0:2)+unit()+'/'+(S.config.time_scale_slope||'h');
 function duration(seconds){seconds=Math.max(0,Math.floor(Number(seconds)||0));return [Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60].map(v=>String(v).padStart(2,'0')).join(':');}
-function axisTime(s){const m=Math.round(Math.max(0,s)/60);return m>=60?Math.floor(m/60)+'h'+(m%60?' '+m%60+'m':''):m+'m';}
+function axisTime(s,signed=false,precise=false){
+ const seconds=Math.round(Math.abs(s)),m=Math.round(Math.abs(s)/60),prefix=(precise?seconds:m)?(s<0?'−':signed?'+':''):'';
+ if(precise){const h=Math.floor(seconds/3600),minutes=Math.floor(seconds/60)%60;return prefix+(h?h+'h ':'')+(minutes||h?minutes+'m ':'')+(seconds%60)+'s';}
+ return prefix+(m>=60?Math.floor(m/60)+'h'+(m%60?' '+m%60+'m':''):m+'m');
+}
+const signedTime=s=>(Math.abs(s)<1?'':s<0?'−':'+')+hoursMinutes(Math.abs(s));
 function validProfile(p){return p&&typeof p.name==='string'&&Array.isArray(p.data)&&p.data.length>=2&&p.data.every((v,i)=>Array.isArray(v)&&finite(v[0])&&finite(v[1])&&v[0]>=0&&(!i||v[0]>p.data[i-1][0]));}
 function selected(){return S.profiles.find(p=>p.name===S.selected)||null;}
 function chartProfile(){return active(S.live)?(S.runProfile&&S.runProfile.name===S.live.profile?S.runProfile:S.profiles.find(p=>p.name===S.live.profile))||null:selected();}
@@ -43,18 +48,36 @@ function connect(channel){
  ws.onerror=()=>ws.close();
  ws.onclose=()=>{S.ready[channel]=false;if(channel==='storage'&&S.pendingStorage){clearTimeout(storageTimer);S.pendingStorage=null;editorError('Connection lost. Check the program list after reconnecting before saving again.');}connection();S.retries[channel]=(S.retries[channel]||0)+1;setTimeout(()=>connect(channel),Math.min(10000,750*Math.pow(1.6,S.retries[channel])));};
 }
+function rememberProgramStart(d){
+ // The controller force-saves the chosen program position at firing start.
+ // Later runtime/temperature cannot recover this offset after waits or restarts.
+ if(d.source==='controller_log'||!finite(d.run_started_at)||!finite(d.timestamp)||!finite(d.runtime)||d.runtime<0||!finite(d.elapsed_seconds)||d.elapsed_seconds<0||d.elapsed_seconds>1)return;
+ if(!S.programStart||S.programStart.origin!==d.run_started_at||d.timestamp<S.programStart.timestamp)S.programStart={origin:d.run_started_at,seconds:d.runtime,timestamp:d.timestamp,temperature:d.sensor_ready!==false&&finite(d.temperature)?d.temperature:null};
+}
 function addHistory(d){
+ rememberProgramStart(d);
  const stamp=finite(d.timestamp)?d.timestamp:d.pidstats&&finite(d.pidstats.time)?d.pidstats.time:null;
  if(!finite(stamp)||!finite(d.temperature)||d.sensor_ready===false)return;
  const last=S.history[S.history.length-1];if(last&&stamp<=last.timestamp)return;
- S.history.push({timestamp:stamp,runtime:d.runtime||0,temperature:d.temperature,target:d.target||0,elapsed:finite(d.elapsed_seconds)?d.elapsed_seconds:null});
+ S.history.push({timestamp:stamp,runtime:d.runtime||0,temperature:d.temperature,target:finite(d.target)?d.target:null,elapsed:finite(d.elapsed_seconds)?d.elapsed_seconds:null});
  if(S.history.length>4000)S.history=S.history.filter((_,i)=>i%2===0||i===S.history.length-1);
 }
 function status(d){
- if(d.type==='backlog'){if(validProfile(d.profile))S.runProfile=d.profile;S.history=[];if(Array.isArray(d.log))d.log.forEach(addHistory);queueDraw();return;}
+ if(d.type==='backlog'){
+  if(validProfile(d.profile))S.runProfile=d.profile;S.history=[];
+  if(Array.isArray(d.log)){d.log.forEach(addHistory);const last=d.log[d.log.length-1];if(last){S.historyOrigin=finite(last.run_started_at)?last.run_started_at:null;S.historyOriginKnown=last.elapsed_origin_known===true;}}
+  queueDraw();return;
+ }
  if(!['IDLE','RUNNING','PAUSED'].includes(d.state))return;
  const key=active(d)?d.profile+':'+(d.run_started_at||''):null;
- if(key&&S.runKey!==key&&S.live)S.history=[];if(key)S.runKey=key;if(active(d))addHistory(d);
+ if(key&&S.runKey!==key&&S.live){
+  S.showSkipped=false;resetChartZoom();
+  const matchingBacklog=S.historyOrigin===d.run_started_at&&S.runProfile&&S.runProfile.name===d.profile;
+  if(!matchingBacklog){S.history=[];S.runProfile=null;S.historyOrigin=null;S.historyOriginKnown=true;}
+  if(S.programStart&&S.programStart.origin!==d.run_started_at)S.programStart=null;
+ }
+ if(key){S.runKey=key;S.historyOrigin=finite(d.run_started_at)?d.run_started_at:null;S.historyOriginKnown=d.elapsed_origin_known!==false;}
+ if(active(d))addHistory(d);
  if(validProfile(d.profile_data))S.runProfile=d.profile_data;
  S.live=d;S.lastStatus=performance.now();
  if(S.pendingState&&d.state===S.pendingState){clearTimeout(commandTimer);S.pendingState=null;}
@@ -136,27 +159,77 @@ function profileSummary(){
 }
 function queueDraw(){if(!drawPending){drawPending=true;requestAnimationFrame(()=>{drawPending=false;drawChart();});}}
 function svg(tag,attrs={},text){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));if(text!==undefined)e.textContent=text;return e;}
+function plannedTemperature(profile,seconds){
+ if(!profile||!finite(seconds)||seconds<profile.data[0][0]||seconds>profile.data[profile.data.length-1][0])return null;
+ const next=profile.data.findIndex(p=>p[0]>=seconds);if(next===0)return profile.data[0][1];
+ const a=profile.data[next-1],b=profile.data[next];return a[1]+(b[1]-a[1])*(seconds-a[0])/(b[0]-a[0]);
+}
+function clipCurve(points,min,max){
+ const clipped=[];
+ points.forEach((p,i)=>{
+  const previous=points[i-1];
+  if(previous&&p.x!==previous.x){
+   const crossings=[min,max].filter(t=>t>Math.min(previous.x,p.x)&&t<Math.max(previous.x,p.x));
+   if(p.x<previous.x)crossings.reverse();
+   crossings.forEach(t=>clipped.push({x:t,y:previous.y+(p.y-previous.y)*(t-previous.x)/(p.x-previous.x),interpolated:true}));
+  }
+  if(p.x>=min&&p.x<=max)clipped.push(p);
+ });
+ return clipped;
+}
+function resetChartZoom(){S.zoom=null;chartDrag=null;$('chart').removeAttribute('data-dragging');$('chart_tooltip').hidden=true;queueDraw();}
+function setChartWindow(min,max,bounds=S.chart){
+ if(!bounds)return;
+ const full=bounds.fullMax-bounds.fullMin,span=clamp(max-min,Math.min(60,full),full),left=clamp(min,bounds.fullMin,bounds.fullMax-span);
+ S.zoom=span>=full-.001?null:{min:left,max:left+span,fullMin:bounds.fullMin,fullMax:bounds.fullMax};
+ $('chart_tooltip').hidden=true;queueDraw();
+}
+function zoomChart(factor,anchor){
+ const g=S.chart;if(!g||(factor<1&&!g.hasCurve))return;
+ const explicitAnchor=finite(anchor);
+ if(!finite(anchor))anchor=!S.zoom&&g.hasActual&&finite(g.now)&&g.now>=g.minX&&g.now<=g.maxX?g.now:(g.minX+g.maxX)/2;
+ const span=g.maxX-g.minX,newSpan=clamp(span*factor,Math.min(60,g.fullMax-g.fullMin),g.fullMax-g.fullMin);
+ const ratio=(!explicitAnchor&&!S.zoom)?0.5:clamp((anchor-g.minX)/span,0,1);
+ const left=anchor-newSpan*ratio;setChartWindow(left,left+newSpan);
+}
+function panChart(direction){const g=S.chart;if(!S.zoom||!g)return;const shift=(g.maxX-g.minX)*direction/2;setChartWindow(g.minX+shift,g.maxX+shift);}
 function drawChart(){
  const root=$('chart'),w=Math.max(260,$('chart_wrap').clientWidth),h=$('chart_wrap').clientHeight;
  const pad={left:43,right:18,top:24,bottom:35},pw=w-pad.left-pad.right,ph=h-pad.top-pad.bottom;
  root.setAttribute('viewBox','0 0 '+w+' '+h);root.replaceChildren();
- const profile=chartProfile(),d=S.live,running=active(d),real=S.mode==='live';
- const origin=d&&finite(d.run_started_at)?d.run_started_at:S.history[0]?S.history[0].timestamp:null;
- let minX=0,maxX=profile?profile.data[profile.data.length-1][0]:3600;
- if(real){maxX=Math.max(60,running&&finite(d.elapsed_seconds)?d.elapsed_seconds:origin&&S.history.length?S.history[S.history.length-1].timestamp-origin:1800);minX=Math.max(0,maxX-1800);}
+ const d=S.live,running=active(d),real=S.mode!=='program',recent=S.mode==='live',comparison=S.mode==='comparison';
+ const retained=S.runProfile&&S.runProfile.name===(running?d.profile:S.selected);
+ const profile=comparison?(running?(retained?S.runProfile:null):retained?S.runProfile:selected()):chartProfile();
+ const relevant=running||recent||retained,origin=S.historyOrigin;
+ const originKnown=!relevant||S.historyOriginKnown;
+ const startPosition=!relevant?0:S.programStart&&S.programStart.origin===origin?S.programStart.seconds:null;
+ const showPlan=!comparison||(originKnown&&finite(startPosition)),offset=comparison&&showPlan?startPosition:0,warmStart=comparison&&offset>0;
+ const measured=(relevant?S.history:[]).map(p=>({x:real?(finite(p.elapsed)?p.elapsed:finite(origin)?p.timestamp-origin:null):p.runtime,y:p.temperature,target:p.target,timestamp:p.timestamp,elapsed:p.elapsed,kind:comparison?'Actual':'Measured'})).filter(p=>finite(p.x)&&p.x>=0);
+ const lastElapsed=measured.length?measured[measured.length-1].x:0;
+ const now=running?(real?d.elapsed_seconds:d.runtime):lastElapsed;
+ let minX=0,maxX=showPlan&&profile?profile.data[profile.data.length-1][0]:3600;
+ if(comparison){minX=showPlan&&profile&&S.showSkipped?Math.min(0,profile.data[0][0]-offset):0;maxX=Math.max(60,showPlan&&profile?maxX-offset:0,lastElapsed,finite(now)?now:0);}
+ if(recent){maxX=Math.max(60,finite(now)?now:1800);minX=Math.max(0,maxX-1800);}
  if(!(maxX>minX))maxX=minX+60;
- const relevant=running||real||(S.runProfile&&S.runProfile.name===S.selected);
- const measured=(relevant?S.history:[]).map(p=>({x:real?(p.elapsed!==null?p.elapsed:p.timestamp-origin):p.runtime,y:p.temperature,target:p.target,timestamp:p.timestamp,elapsed:p.elapsed,kind:'Measured'}));
- const visible=measured.filter(p=>p.x>=minX&&p.x<=maxX);
- const planned=real?visible.filter(p=>finite(p.target)).map(p=>({x:p.x,y:p.target})):profile?profile.data.map(p=>({x:p[0],y:p[1]})):[];
+ const fullMin=S.zoom?Math.min(minX,S.zoom.fullMin):minX,fullMax=S.zoom?Math.max(maxX,S.zoom.fullMax):maxX;
+ if(S.zoom){const span=Math.min(S.zoom.max-S.zoom.min,fullMax-fullMin);minX=clamp(S.zoom.min,fullMin,fullMax-span);maxX=minX+span;}
+ const visible=clipCurve(measured,minX,maxX);
+ let planned=recent?measured.filter(p=>finite(p.target)).map(p=>({x:p.x,y:p.target})):showPlan&&profile?profile.data.map(p=>({x:p[0]-offset,y:p[1]})):[];
+ const startTemperature=warmStart?plannedTemperature(profile,offset):null;
+ if(finite(startTemperature)&&!planned.some(p=>p.x===0)){planned.push({x:0,y:startTemperature});planned.sort((a,b)=>a.x-b.x);}
+ if(warmStart&&!S.showSkipped)planned=planned.filter(p=>p.x>=0);
+ planned=clipCurve(planned,minX,maxX);
  const temperatures=[...visible.map(p=>p.y),...planned.map(p=>p.y)];
  let yMin=0,yMax=temperatures.length?Math.max(...temperatures):300;
- if(real&&temperatures.length)yMin=Math.max(0,Math.min(...temperatures)-10);
+ if(recent&&temperatures.length)yMin=Math.max(0,Math.min(...temperatures)-10);
+ if(warmStart&&!S.showSkipped&&temperatures.length)yMin=Math.max(0,Math.min(...temperatures)-20);
+ if(S.zoom&&temperatures.length)yMin=Math.max(0,Math.min(...temperatures)-10);
  const spread=Math.max(20,yMax-yMin),rawStep=spread/4,magnitude=Math.pow(10,Math.floor(Math.log10(rawStep)));
  const step=[1,2,2.5,5,10].map(v=>v*magnitude).find(v=>v>=rawStep)||magnitude*10;
  yMin=Math.floor(yMin/step)*step;yMax=Math.ceil((yMax+spread*.08)/step)*step;if(yMax<=yMin)yMax=yMin+step*4;
  const x=v=>pad.left+(v-minX)/(maxX-minX)*pw,y=v=>pad.top+ph-(v-yMin)/(yMax-yMin)*ph;
- root.append(svg('title',{},(running?d.profile+': ':'')+'measured and target temperature over '+(real?'elapsed firing time':'program time')));
+ root.setAttribute('data-min-time',minX);root.setAttribute('data-max-time',maxX);root.setAttribute('data-full-min-time',fullMin);root.setAttribute('data-full-max-time',fullMax);root.classList.toggle('is-zoomed',!!S.zoom);
+ root.append(svg('title',{},(running?d.profile+': ':'')+(comparison?'actual and original planned temperature':'measured and controller target temperature')+' over '+(real?originKnown?'elapsed firing time':'time since recovery':'program time')));
  const defs=svg('defs'),clip=svg('clipPath',{id:'plot-clip'});clip.append(svg('rect',{x:pad.left,y:pad.top,width:pw,height:ph}));defs.append(clip);
  const gradient=svg('linearGradient',{id:'temp-fill',x1:0,y1:0,x2:0,y2:1});
  gradient.append(svg('stop',{offset:'0%','stop-color':'#dc8b58','stop-opacity':'.12'}),svg('stop',{offset:'100%','stop-color':'#dc8b58','stop-opacity':'0'}));defs.append(gradient);root.append(defs);
@@ -166,38 +239,69 @@ function drawChart(){
   root.append(svg('text',{x:pad.left-10,y:yy+3,'text-anchor':'end',fill:'#8b978f','font-size':10},num(t,step<1?1:0)));
  }
  const ticks=w<450?4:6;
- for(let i=0;i<ticks;i++){const t=minX+(maxX-minX)*i/(ticks-1);root.append(svg('text',{x:x(t),y:h-10,'text-anchor':i===0?'start':i===ticks-1?'end':'middle',fill:'#8b978f','font-size':10},axisTime(t)));}
+ let tickTimes=Array.from({length:ticks},(_,i)=>minX+(maxX-minX)*i/(ticks-1));
+ if(warmStart&&minX<=0&&maxX>=0)tickTimes=[...tickTimes.filter(t=>Math.abs(x(t)-x(0))>55),0].sort((a,b)=>a-b);
+ tickTimes.forEach(t=>root.append(svg('text',{x:x(t),y:h-10,'text-anchor':x(t)-pad.left<30?'start':w-pad.right-x(t)<30?'end':'middle',fill:t===0&&warmStart?'#365b50':'#8b978f','font-size':10,'font-weight':t===0&&warmStart?600:400},axisTime(t,warmStart,maxX-minX<300))));
  const plot=svg('g',{'clip-path':'url(#plot-clip)'}),path=points=>points.map((p,i)=>(i?'L':'M')+x(p.x).toFixed(2)+','+y(p.y).toFixed(2)).join(' ');
  if(visible.length>1)plot.append(svg('path',{d:path(visible)+' L'+x(visible[visible.length-1].x)+','+y(yMin)+' L'+x(visible[0].x)+','+y(yMin)+' Z',fill:'url(#temp-fill)'}));
- if(planned.length)plot.append(svg('path',{d:path(planned),fill:'none',stroke:'#548e7a','stroke-width':2,'stroke-dasharray':'5 5','stroke-linejoin':'round'}));
- if(!real&&profile)profile.data.forEach(p=>plot.append(svg('circle',{cx:x(p[0]),cy:y(p[1]),r:3,fill:'#fff',stroke:'#548e7a','stroke-width':1.5})));
- if(visible.length){plot.append(svg('path',{d:path(visible),fill:'none',stroke:'#d97842','stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'}));const last=visible[visible.length-1];plot.append(svg('circle',{cx:x(last.x),cy:y(last.y),r:4,fill:'#d97842',stroke:'#fff','stroke-width':2}));}
- if(running&&!real&&finite(d.runtime)){const xx=x(d.runtime);plot.append(svg('line',{x1:xx,y1:pad.top,x2:xx,y2:pad.top+ph,stroke:'#c6cfc7','stroke-dasharray':'3 4'}));root.append(svg('text',{x:clamp(xx+5,pad.left,w-42),y:17,fill:'#7e8e83','font-size':10},'Now'));}
+ if(warmStart&&minX<=0&&maxX>=0)plot.append(svg('line',{'data-marker':'start',x1:x(0),y1:pad.top,x2:x(0),y2:pad.top+ph,stroke:'#a1b5a9','stroke-dasharray':'2 4'}));
+ if(planned.length)plot.append(svg('path',{'data-series':'planned',d:path(planned),fill:'none',stroke:'#548e7a','stroke-width':2,'stroke-dasharray':'5 5','stroke-linejoin':'round'}));
+ if(!recent)planned.filter(p=>!p.interpolated).forEach(p=>plot.append(svg('circle',{cx:x(p.x),cy:y(p.y),r:3,fill:'#fff',stroke:'#548e7a','stroke-width':1.5})));
+ const readings=visible.filter(p=>!p.interpolated);
+ if(visible.length){plot.append(svg('path',{'data-series':'actual',d:path(visible),fill:'none',stroke:'#d97842','stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'}));const last=readings[readings.length-1];if(last)plot.append(svg('circle',{cx:x(last.x),cy:y(last.y),r:4,fill:'#d97842',stroke:'#fff','stroke-width':2}));}
+ if(running&&!recent&&finite(now)&&now>=minX&&now<=maxX){const xx=x(now);plot.append(svg('line',{'data-marker':'now',x1:xx,y1:pad.top,x2:xx,y2:pad.top+ph,stroke:'#c6cfc7','stroke-dasharray':'3 4'}));root.append(svg('text',{x:clamp(xx+5,pad.left,w-42),y:17,fill:'#7e8e83','font-size':10},'Now'));}
  root.append(plot);
  if(!visible.length&&!planned.length)root.append(svg('text',{x:w/2,y:h/2,'text-anchor':'middle',fill:'#95a198','font-size':12},'Temperature readings will appear here'));
- S.chart={points:[...visible,...planned.map(p=>({...p,kind:'Target'}))].sort((a,b)=>a.x-b.x),x,y,width:w,height:h,minX,maxX,pad,pw,real};
+ S.chart={points:[...readings,...planned.map(p=>({...p,kind:comparison?'Planned':recent?'Controller target':'Planned'}))].sort((a,b)=>a.x-b.x),x,y,width:w,height:h,minX,maxX,fullMin,fullMax,now,hasActual:measured.length>0,hasCurve:!!(visible.length||planned.length),pad,pw,real,comparison,profile:showPlan?profile:null,originKnown,offset,warmStart};
+ $('zoom_in').disabled=(!visible.length&&!planned.length)||maxX-minX<=Math.min(60,fullMax-fullMin)+.001;
+ $('zoom_out').disabled=$('zoom_reset').disabled=!S.zoom;
+ $('pan_left').disabled=!S.zoom||minX<=fullMin+.001;$('pan_right').disabled=!S.zoom||maxX>=fullMax-.001;
+ $('zoom_level').textContent=S.zoom?axisTime(maxX-minX)+' view':'Full view';
+ $('actual_legend').textContent=comparison?'Actual':'Measured';$('planned_legend_label').textContent=recent?'Controller target':'Planned';$('planned_legend').hidden=comparison&&!showPlan;
+ $('warm_start_note').hidden=!warmStart;
+ const actualStart=warmStart?S.programStart.temperature:null;
+ $('warm_start_summary').textContent=warmStart?((finite(actualStart)?'Started at '+num(actualStart)+unit():finite(startTemperature)?'Program starts at '+num(startTemperature)+unit():'Started partway through the program')+' · '+axisTime(offset)+' skipped'):'';
+ $('show_skipped').textContent=S.showSkipped?'Hide skipped steps':'Show skipped steps';$('show_skipped').setAttribute('aria-expanded',String(S.showSkipped));
  $('chart_summary').textContent=S.history.length?S.history.length+' available readings':'Live readings appear during firing';
- $('chart_hint').textContent=(real?(d&&d.elapsed_origin_known===false?'Time since recovery':'Elapsed firing time'):'Program time')+' · Hover or touch to inspect';
+ $('chart_hint').textContent=comparison?(!originKnown?'Time since recovery · Original start unknown; plan comparison unavailable':!finite(startPosition)?'Starting program position unavailable; plan comparison unavailable':warmStart?(S.showSkipped?'0 = firing start · Negative time = skipped program':'Time since firing start · Hover or touch to inspect'):'Elapsed time from firing start · Original plan includes no added waits'):(real?originKnown?'Elapsed firing time':'Time since recovery':'Program time')+' · Hover or touch to inspect';
 }
 function tooltip(index){
  const g=S.chart;if(!g||!g.points.length)return;index=clamp(index,0,g.points.length-1);g.cursor=index;
  const p=g.points[index],tip=$('chart_tooltip');tip.replaceChildren();
- const title=document.createElement('strong');title.textContent=(g.real?'Elapsed ':'Program ')+hoursMinutes(p.x);
+ const title=document.createElement('strong');title.textContent=(g.warmStart?'Time ':g.real?g.originKnown?'Elapsed ':'Since recovery ':'Program ')+(g.maxX-g.minX<300?axisTime(p.x,g.warmStart,true):g.warmStart?signedTime(p.x):hoursMinutes(p.x));
  const a=document.createElement('div');a.textContent=p.kind+' '+num(p.y)+unit();tip.append(title,a);
- if(p.kind==='Measured'&&finite(p.target)){const b=document.createElement('div');b.textContent='Target '+num(p.target)+unit();tip.append(b);}
+ if(g.comparison&&p.kind==='Actual'){
+  const planned=plannedTemperature(g.profile,p.x+g.offset),b=document.createElement('div');
+  if(finite(planned)){b.textContent='Planned '+num(planned)+unit();tip.append(b);const delta=document.createElement('div');delta.textContent=Math.abs(p.y-planned)<.1?'On the planned ramp':num(Math.abs(p.y-planned))+unit()+(p.y<planned?' below plan':' above plan');tip.append(delta);}
+  else if(g.profile&&p.x>g.profile.data[g.profile.data.length-1][0]-g.offset){const finish=g.profile.data[g.profile.data.length-1][0]-g.offset;b.textContent='Planned finish: '+(g.warmStart?signedTime(finish):hoursMinutes(finish));tip.append(b);}
+ }else if(p.kind==='Measured'&&finite(p.target)){const b=document.createElement('div');b.textContent='Controller target '+num(p.target)+unit();tip.append(b);}
  if(!g.real&&finite(p.elapsed)){const e=document.createElement('div');e.textContent='Elapsed '+hoursMinutes(p.elapsed);tip.append(e);}
  tip.hidden=false;tip.style.left=clamp(g.x(p.x)+10,4,g.width-tip.offsetWidth-4)+'px';tip.style.top=clamp(g.y(p.y)-tip.offsetHeight-10,2,g.height-tip.offsetHeight-2)+'px';
 }
 $('chart').addEventListener('pointermove',e=>{
- const g=S.chart;if(!g||!g.points.length)return;const rect=$('chart').getBoundingClientRect(),xx=(e.clientX-rect.left)/rect.width*g.width,yy=(e.clientY-rect.top)/rect.height*g.height;
+ const g=S.chart;if(!g)return;const rect=$('chart').getBoundingClientRect();
+ if(chartDrag&&Math.abs(e.clientX-chartDrag.x)>=4){const shift=-(e.clientX-chartDrag.x)/rect.width*g.width/g.pw*(chartDrag.max-chartDrag.min);setChartWindow(chartDrag.min+shift,chartDrag.max+shift,chartDrag);return;}
+ if(!g.points.length)return;const xx=(e.clientX-rect.left)/rect.width*g.width,yy=(e.clientY-rect.top)/rect.height*g.height;
  const distance=p=>(g.x(p.x)-xx)**2+(g.y(p.y)-yy)**2;
  let i=0;g.points.forEach((p,j)=>{if(distance(p)<distance(g.points[i]))i=j;});tooltip(i);
 });
 $('chart').addEventListener('pointerleave',()=>{$('chart_tooltip').hidden=true;});
-$('chart').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)&&S.chart&&S.chart.points.length){e.preventDefault();tooltip((S.chart.cursor===undefined?S.chart.points.length-1:S.chart.cursor)+(e.key==='ArrowRight'?1:-1));}if(e.key==='Escape')$('chart_tooltip').hidden=true;});
-function mode(value){S.mode=value;$('view_program').setAttribute('aria-pressed',value==='program');$('view_live').setAttribute('aria-pressed',value==='live');$('chart_tooltip').hidden=true;queueDraw();}
-$('view_program').onclick=()=>mode('program');$('view_live').onclick=()=>mode('live');
-$('profile_select').onchange=()=>{S.selected=$('profile_select').value;profileSummary();buttons();queueDraw();};
+$('chart').addEventListener('pointerdown',e=>{if(!S.zoom||!S.chart||e.button!==0||!e.isPrimary)return;const g=S.chart;chartDrag={x:e.clientX,min:g.minX,max:g.maxX,fullMin:g.fullMin,fullMax:g.fullMax};$('chart').setPointerCapture(e.pointerId);$('chart').setAttribute('data-dragging','true');});
+function endChartDrag(e){chartDrag=null;$('chart').removeAttribute('data-dragging');if($('chart').hasPointerCapture(e.pointerId))$('chart').releasePointerCapture(e.pointerId);}
+$('chart').addEventListener('pointerup',endChartDrag);$('chart').addEventListener('pointercancel',endChartDrag);
+$('chart').addEventListener('wheel',e=>{const g=S.chart;if(!e.ctrlKey||!g||!g.hasCurve)return;e.preventDefault();const rect=$('chart').getBoundingClientRect(),fraction=clamp(((e.clientX-rect.left)/rect.width*g.width-g.pad.left)/g.pw,0,1);zoomChart(e.deltaY<0?0.8:1.25,g.minX+fraction*(g.maxX-g.minX));},{passive:false});
+$('chart').addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey||e.altKey)return;
+ if(['+','=','-','_','0'].includes(e.key)){e.preventDefault();if(e.key==='0')resetChartZoom();else zoomChart(['+','='].includes(e.key)?0.5:2);return;}
+ if(['ArrowLeft','ArrowRight'].includes(e.key)&&S.chart){e.preventDefault();if(e.shiftKey)panChart(e.key==='ArrowRight'?1:-1);else if(S.chart.points.length)tooltip((S.chart.cursor===undefined?S.chart.points.length-1:S.chart.cursor)+(e.key==='ArrowRight'?1:-1));}
+ if(e.key==='Escape')$('chart_tooltip').hidden=true;
+});
+$('zoom_in').onclick=()=>zoomChart(.5);$('zoom_out').onclick=()=>zoomChart(2);$('zoom_reset').onclick=resetChartZoom;
+$('pan_left').onclick=()=>panChart(-1);$('pan_right').onclick=()=>panChart(1);
+function mode(value){S.mode=value;resetChartZoom();['comparison','program','live'].forEach(name=>$('view_'+name).setAttribute('aria-pressed',value===name));}
+$('view_comparison').onclick=()=>mode('comparison');$('view_program').onclick=()=>mode('program');$('view_live').onclick=()=>mode('live');
+$('show_skipped').onclick=()=>{S.showSkipped=!S.showSkipped;resetChartZoom();};
+$('profile_select').onchange=()=>{S.selected=$('profile_select').value;resetChartZoom();profileSummary();buttons();};
 $('schedule_button').onclick=()=>{$('schedule_container').hidden=!$('schedule_container').hidden;$('schedule_button').textContent=$('schedule_container').hidden?'View schedule ↓':'Hide schedule ↑';};
 $('export_button').onclick=()=>{
  const rows=[['timestamp_utc','elapsed_seconds','program_seconds','measured_'+unit(),'target_'+unit()]];
@@ -271,6 +375,8 @@ async function loadFiringHistory(){
   const response=await fetch('/api/firings/'+record.id,{cache:'no-store'});if(!response.ok)throw new Error();const data=await response.json();
   if(S.runKey!==key)return;
   const scale=S.config.temp_scale||'c',convert=v=>scale==='f'?v*1.8+32:v;
+  if(data.record&&validProfile(data.record.profile_data))S.runProfile={...data.record.profile_data,data:data.record.profile_data.data.map(p=>[p[0],convert(p[1])])};
+  const first=data.samples[0];if(first&&data.record)rememberProgramStart({runtime:first.program_seconds,elapsed_seconds:first.elapsed_seconds,timestamp:first.timestamp,run_started_at:data.record.started_at,source:first.source,temperature:finite(first.temperature_c)?convert(first.temperature_c):null,sensor_ready:first.sensor_ready});
   const saved=data.samples.filter(p=>p.sensor_ready&&finite(p.temperature_c)).map(p=>({timestamp:p.timestamp,runtime:p.program_seconds,temperature:convert(p.temperature_c),target:finite(p.target_c)?convert(p.target_c):null,elapsed:p.elapsed_seconds}));
   const merged=[...saved,...S.history].sort((a,b)=>a.timestamp-b.timestamp).filter((p,i,a)=>!i||p.timestamp>a[i-1].timestamp);
   const stride=Math.max(1,Math.ceil(merged.length/4000));S.history=merged.filter((_,i)=>i%stride===0||i===merged.length-1);loadedFiring=key;queueDraw();buttons();

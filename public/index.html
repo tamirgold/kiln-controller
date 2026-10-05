@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#123f3a">
   <title>Kiln · Firing dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23174d41'/%3E%3Cpath d='M9 25V12a7 7 0 0 1 14 0v13H9zm4 0v-8h6v8M6 25h20' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/dashboard.css?v=20260923-history-1">
-  <script defer src="assets/js/dashboard.js?v=20260923-history-1"></script>
+  <link rel="stylesheet" href="assets/css/dashboard.css?v=20261005-zoom-1">
+  <script defer src="assets/js/dashboard.js?v=20261005-zoom-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to dashboard</a>
@@ -57,10 +57,12 @@
   </section>
   <div class="dashboard-grid">
     <section class="card chart-card">
-      <div class="card-heading"><div><div class="eyebrow">TEMPERATURE</div><h2>Every degree, in view.</h2></div><div class="segmented" role="group" aria-label="Chart time range"><button id="view_program" aria-pressed="true">Program</button><button id="view_live" aria-pressed="false">Live · 30 min</button></div></div>
-      <div class="chart-legend"><span><i class="legend-line measured"></i>Measured</span><span><i class="legend-line planned"></i>Target</span><span id="chart_summary">Waiting for readings</span></div>
-      <div id="chart_wrap" class="chart-wrap"><svg id="chart" role="img" tabindex="0" aria-label="Temperature chart. Use arrow keys to inspect readings."></svg><div id="chart_tooltip" class="chart-tooltip" hidden></div></div>
-      <div class="chart-footer"><span id="chart_hint">Program time · Hover or touch to inspect</span><button class="text-button" id="export_button" disabled>Export readings <span aria-hidden="true">↓</span></button></div>
+      <div class="card-heading"><div><div class="eyebrow">TEMPERATURE</div><h2>Every degree, in view.</h2></div><div class="segmented" role="group" aria-label="Temperature chart view"><button id="view_comparison" aria-pressed="true">Plan vs actual</button><button id="view_program" aria-pressed="false">Program</button><button id="view_live" aria-pressed="false">Live · 30 min</button></div></div>
+      <div class="chart-legend"><span><i class="legend-line measured"></i><span id="actual_legend">Actual</span></span><span id="planned_legend"><i class="legend-line planned"></i><span id="planned_legend_label">Planned</span></span><span id="chart_summary">Waiting for readings</span></div>
+      <div id="warm_start_note" class="chart-start" hidden><span id="warm_start_summary"></span><button id="show_skipped" class="text-button" aria-expanded="false" aria-controls="chart">Show skipped steps</button></div>
+      <div class="chart-tools"><div class="chart-tool-group" role="group" aria-label="Chart zoom"><button id="zoom_in" type="button" aria-label="Zoom in" title="Zoom in (+)" disabled>+</button><button id="zoom_out" type="button" aria-label="Zoom out" title="Zoom out (−)" disabled>−</button><button id="zoom_reset" type="button" aria-label="Reset chart zoom" disabled>Reset</button><span id="zoom_level" aria-live="polite">Full view</span></div><div class="chart-tool-group" role="group" aria-label="Move along the chart"><button id="pan_left" type="button" aria-label="Earlier on chart" disabled>‹ Earlier</button><button id="pan_right" type="button" aria-label="Later on chart" disabled>Later ›</button></div></div>
+      <div id="chart_wrap" class="chart-wrap"><svg id="chart" role="img" tabindex="0" aria-label="Temperature chart. Arrow keys inspect readings. Plus and minus zoom; Shift and arrow keys pan; 0 resets."></svg><div id="chart_tooltip" class="chart-tooltip" hidden></div></div>
+      <div class="chart-footer"><span id="chart_hint">Elapsed time from firing start · Original plan includes no added waits</span><button class="text-button" id="export_button" disabled>Export readings <span aria-hidden="true">↓</span></button></div>
     </section>
     <aside class="card run-card">
       <div class="card-heading"><div><div class="eyebrow">CURRENT FIRING</div><h2 id="active_profile">No active program</h2></div><span class="status-ring" aria-hidden="true"></span></div>

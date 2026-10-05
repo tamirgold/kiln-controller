@@ -28,7 +28,7 @@ field('temp_scale','Temperature units','general','select',help='Changing units c
 field('time_scale_profile','Schedule editor time units','general','select',options={'s':'Seconds','m':'Minutes','h':'Hours'})
 field('time_scale_slope','Heating / cooling rate units','general','select',options={'s':'Degrees per second','m':'Degrees per minute','h':'Degrees per hour'})
 field('seek_start','Skip initial schedule when kiln is warm','firing','boolean',help='A new firing can start at the matching temperature in its schedule.')
-field('kiln_must_catch_up','Wait for temperature before advancing','firing','boolean',help='Holds program progress when temperature is outside the control window.')
+field('kiln_must_catch_up','Wait for temperature before advancing','firing','boolean',help='Waits when too cold on heating ramps, too hot on cooling ramps, or outside the control window during holds. PID still controls heating when the program advances.')
 field('sensor_time_wait','Control cycle (seconds)','firing',help='One complete heater on/off cycle. Shorter cycles switch the SSR more often.',minimum=.5,maximum=30)
 field('throttle_below_temp','Low-temperature throttle threshold','firing',help='Temperature below which the warm-up output limit applies.',minimum=-100,maximum=3500)
 field('throttle_percent','Low-temperature output limit (%)','firing',help='100 allows full power. Applies below the throttle threshold when outside the PID window.',minimum=1,maximum=100)

@@ -191,9 +191,9 @@ time_scale_profile  = "m" # s = Seconds | m = Minutes | h = Hours - Enter and vi
 # this should not replace you watching your kiln or use of a kiln-sitter
 emergency_shutoff_temp = 1240 # Celsius; equivalent to upstream 2264 F
 
-# If the current temperature is outside the pid control window,
-# delay the schedule until it does back inside. This allows for heating
-# and cooling as fast as possible and not continuing until temp is reached.
+# Delay heating ramps when too cold, cooling ramps when too hot, and
+# holds on either side of the pid control window. A ramp may advance
+# when temperature is already ahead of its target; PID still limits heat.
 kiln_must_catch_up = True
 
 # This setting is required. 

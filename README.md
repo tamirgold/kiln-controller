@@ -116,8 +116,21 @@ module and pull-up; verify your own hardware before using that wiring.
   sensor status, heating/cooling rate, and the current ramp, hold, or cooling phase.
 - Track elapsed firing time separately from program progress. Elapsed time includes
   pauses and catch-up; program time left is not an exact finish-time prediction.
-- Switch between the whole **Program** and **Live · 30 min** charts. Inspect points
-  with a mouse, touch, or arrow keys, and export available readings as CSV.
+- Compare the original schedule with measured temperatures on the same elapsed-time
+  axis in **Plan vs actual**. Warm starts put the saved starting program position
+  at zero and focus on actual readings and the remaining plan. A start summary
+  shows the starting temperature and skipped duration. **Show skipped steps**
+  reveals earlier program points at negative times; remaining steps stay positive.
+  The offset stays fixed through catch-up and recovery. Comparison is unavailable
+  if the original starting position is missing from the firing's saved readings.
+  Switch to **Program** for program progress or **Live · 30 min** for recent readings
+  and the controller's target. Inspect points with a mouse, touch, or arrow keys,
+  and export available readings as CSV.
+- Zoom the temperature chart with **+** and **−**, move with **Earlier**/**Later**
+  or drag while zoomed, and use **Reset** to restore the full view. Ctrl+scroll
+  zooms around the pointer. Zoomed views keep their time window as readings arrive;
+  the temperature axis fits that window. Keyboard shortcuts on the chart: +/− to
+  zoom, Shift+Left/Right to move, and 0 to reset.
 - Reconnect automatically after a lost browser connection. The controller keeps
   operating; connection and sensor warnings identify unavailable readings.
 - Recover the current firing's saved curve when reopening the dashboard. Live
@@ -287,8 +300,10 @@ shutdown. Keep fault overrides disabled for normal operation. MAX31856's configu
 apply to MAX31855.
 
 PID regulates heater duty inside its control window, with automatic integral windup protection outside that
-window. Optional catch-up holds program progress while the kiln is too far from target. Warm-start seek can
-skip initial schedule points when starting with a warm kiln. Low-temperature throttling limits requested power
+window. Optional catch-up holds heating ramps when too cold, cooling ramps when too hot, and holds when
+temperature is outside the window on either side. A ramp advances when temperature is already ahead of its
+target; PID still controls heater output. Warm-start seek can skip initial schedule points when starting with
+a warm kiln. Low-temperature throttling limits requested power
 outside the PID window when the target is below its threshold.
 
 Automatic recovery restores saved program progress after an eligible interruption. It requires a recent valid

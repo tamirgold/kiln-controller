@@ -475,9 +475,10 @@ class Oven(threading.Thread):
         self.reset()
         self.startat = startat * 60
         self.runtime = runtime
-        self.start_time = datetime.datetime.now() - datetime.timedelta(seconds=self.startat)
+        self.start_time = self.get_start_time()
         self.profile = profile
         self.totaltime = profile.get_duration()
+        self.update_target_temp()
         self.run_started_at = time.time()
         self.state = "RUNNING"
         log.info("Running schedule %s starting at %d minutes" % (profile.name,startat))
@@ -500,23 +501,26 @@ class Oven(threading.Thread):
 
     def kiln_must_catch_up(self):
         '''shift the whole schedule forward in time by one time_step
-        to wait for the kiln to catch up'''
-        if config.kiln_must_catch_up == True:
-            temp = self.board.temp_sensor.temperature() + \
-                config.thermocouple_offset
-            # kiln too cold, wait for it to heat up
-            if self.target - temp > config.pid_control_window:
-                log.info("kiln must catch up, too cold, shifting schedule")
-                self.start_time = self.get_start_time()
-                self.catching_up = True;
-                return
-            # kiln too hot, wait for it to cool down
-            if temp - self.target > config.pid_control_window:
-                log.info("kiln must catch up, too hot, shifting schedule")
-                self.start_time = self.get_start_time()
-                self.catching_up = True;
-                return
-            self.catching_up = False;
+        when temperature is behind the current ramp, or outside a hold'''
+        self.catching_up = False
+        if not config.kiln_must_catch_up or self.profile is None:
+            return
+        previous, following = self.profile.get_surrounding_points(self.runtime)
+        if previous is None or following is None or following[0] <= previous[0]:
+            # Let the normal lifecycle handle an absent/completed segment.
+            return
+
+        temp = self.board.temp_sensor.temperature() + config.thermocouple_offset
+        direction = following[1] - previous[1]
+        too_cold = self.target - temp > config.pid_control_window
+        too_hot = temp - self.target > config.pid_control_window
+        # An upward ramp can catch up with an overshoot by advancing its
+        # target. PID still switches heat off when temperature is too high.
+        # Holds wait on both sides; cooling ramps wait only when too hot.
+        if (direction >= 0 and too_cold) or (direction <= 0 and too_hot):
+            log.info("kiln must catch up, %s, shifting schedule", "too cold" if too_cold else "too hot")
+            self.start_time = self.get_start_time()
+            self.catching_up = True
 
     def update_runtime(self):
 
