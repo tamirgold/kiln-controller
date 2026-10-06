@@ -47,6 +47,22 @@ simulation, wiring, settings, service, commissioning, testing, backups, and upda
 The target is an Orange Pi Zero 2W running Debian 12 with Python 3.11. This fork uses its H616-compatible GPIO
 mapping and Orange Pi pin choices; other boards require configuration and compatibility work.
 
+For a new installation, clone this repository and run the setup script as your
+normal user on the Orange Pi:
+
+```bash
+bash setup.sh
+```
+
+It installs the system packages, configures GPIO permissions, and prepares the
+Python environment. Log out and reconnect, then continue from
+[step 4 of the installation guide](docs/INSTALL.md#4-preview-the-interface-in-simulation).
+The script leaves settings and firing data intact and does not start the kiln
+controller. For an existing installation, follow the guide's
+[backup and update procedure](docs/INSTALL.md#8-back-up-and-update) first.
+
+To perform the setup manually:
+
 1. Prepare Debian, install the distro GPIO bindings, and configure the `gpio`
    group, Chrony, and Avahi as described in the guide.
 2. Clone [tamirgold/kiln-controller](https://github.com/tamirgold/kiln-controller)
