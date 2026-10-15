@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1154" viewBox="0 0 1200 1154" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1710" viewBox="0 0 1200 1710" role="img" aria-labelledby="title desc">
 <title id="title">Raspberry Pi 3 / 4 — low-voltage connection schematic; physical verification required</title>
-<desc id="desc">Raspberry Pi 3 or 4 with a 40-pin header. Find physical pin 1 using the board marking or manual, not USB socket orientation. For a compatible MAX31855 breakout: physical pin 1 supplies 3.3 volts to its supply input; pin 6 connects ground; pin 23, BCM11 connects CLK or SCK; pin 21, BCM9 receives DO, SO or MISO; pin 24, BCM8 connects CS. Pin 19, BCM10 MOSI is used only for MAX31856 SDI and remains disconnected for MAX31855. K-type thermocouple polarity connects to T plus and T minus. Physical pin 37, BCM26 supplies the heat request to a 3.3 volt-compatible driver input, never directly to the SSR. Pin 39 is driver logic ground where the driver datasheet requires a shared reference. This is a connection schematic, not a physical sensor-module layout. Verify every physical connection with kiln mains isolated before enabling heat.</desc>
+<desc id="desc">Raspberry Pi 3 or 4 with a 40-pin header. Find physical pin 1 using the board marking or manual, not USB socket orientation. For a compatible MAX31855 breakout: pin 1 supplies 3.3 volts; pin 6 connects ground; pin 23, BCM11 connects CLK; pin 21, BCM9 receives DO; pin 24, BCM8 connects CS. Pin 19, BCM10 MOSI is used only for MAX31856 and remains disconnected for MAX31855. For a verified active-high low-side MOSFET module accepting nominal 5 volt power and a Pi-safe 3.3 volt trigger: physical pin 2 supplies DC plus, pin 14 connects DC minus, pin 37 BCM26 supplies TRIG or PWM, and pin 39 connects logic GND if separate. Power and logic grounds are common. OUT plus connects internally to DC plus and connects to SSR DC input plus. Switched OUT minus connects to SSR DC input minus; do not connect SSR minus directly to ground. A suitable 10 kiloohm pull-down connects TRIG to logic GND. Leave output inversion off; LOW means no heat. The Pi USB supply is the only control supply. Header 5 volts may remain live after OS shutdown; verify OFF behavior. This is a connection schematic, not a physical module layout. Verify the exact module and every connection with kiln mains isolated before enabling heat.</desc>
 <defs><style>text{font-family:Arial,Helvetica,sans-serif}</style>
 <marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
 <marker id="heat" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
 <marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
 <marker id="ground" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
 </defs>
-<rect width="1200" height="1154" fill="#ffffff"/>
+<rect width="1200" height="1710" fill="#ffffff"/>
 <text x="36" y="51" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Raspberry Pi 3 / 4 · low-voltage wiring</text>
 <text x="36" y="87" font-size="21" fill="#52635b" font-weight="400" text-anchor="start">40-pin header · physical pin numbers and BCM signal names are shown together.</text>
 <rect x="36" y="112" width="1128" height="67" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
@@ -19,8 +19,8 @@
 <rect x="113" y="292" width="92" height="515" rx="10" fill="white" stroke="#c5d9d0" stroke-width="2"/>
 <rect x="124" y="303" width="16" height="16" rx="2" fill="#7654a6" stroke="#173f35" stroke-width="2"/>
 <text x="98" y="317" font-size="18" fill="#173f35" font-weight="700" text-anchor="end">1</text>
-<circle cx="186" cy="311" r="8" fill="#ccd5d0"/>
-<text x="221" y="317" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">2</text>
+<circle cx="186" cy="311" r="8" fill="#7654a6"/>
+<text x="221" y="317" font-size="18" fill="#173f35" font-weight="700" text-anchor="start">2</text>
 <circle cx="132" cy="336" r="8" fill="#ccd5d0"/>
 <text x="98" y="342" font-size="18" fill="#52635b" font-weight="400" text-anchor="end">3</text>
 <circle cx="186" cy="336" r="8" fill="#ccd5d0"/>
@@ -43,8 +43,8 @@
 <text x="221" y="442" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">12</text>
 <circle cx="132" cy="461" r="8" fill="#ccd5d0"/>
 <text x="98" y="467" font-size="18" fill="#52635b" font-weight="400" text-anchor="end">13</text>
-<circle cx="186" cy="461" r="8" fill="#ccd5d0"/>
-<text x="221" y="467" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">14</text>
+<circle cx="186" cy="461" r="8" fill="#7b8982"/>
+<text x="221" y="467" font-size="18" fill="#173f35" font-weight="700" text-anchor="start">14</text>
 <circle cx="132" cy="486" r="8" fill="#ccd5d0"/>
 <text x="98" y="492" font-size="18" fill="#52635b" font-weight="400" text-anchor="end">15</text>
 <circle cx="186" cy="486" r="8" fill="#ccd5d0"/>
@@ -133,17 +133,47 @@
 <text x="350" y="711" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">* Use a 3.3 V-compatible supply input. 3Vo is an output, not VIN.</text>
 <text x="350" y="741" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">K-type probe: positive → T+, negative → T−. Check polarity markings.</text>
 <text x="350" y="765" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">Use an ungrounded probe with MAX31855; keep the module cool.</text>
-<rect x="327" y="802" width="837" height="181" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
-<text x="350" y="840" font-size="25" fill="#173f35" font-weight="700" text-anchor="start">2. Connect a compatible output interface</text>
-<text x="350" y="892" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">37 · BCM26 (heat)</text>
-<path d="M 624 885 L 737 885" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
-<text x="770" y="892" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">3.3 V-compatible driver input</text>
-<text x="350" y="942" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">39 · GND</text>
-<path d="M 624 935 L 737 935" fill="none" stroke="#7b8982" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#ground)"/>
-<text x="770" y="942" font-size="20" fill="#25362f" font-weight="400" text-anchor="start">Driver logic ground†</text>
-<text x="350" y="1013" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">† Follow the driver datasheet for logic ground, power and isolation.</text>
-<text x="350" y="1040" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">Set the driver’s polarity; verify OFF at boot and on controller power loss.</text>
-<text x="350" y="1067" font-size="18" fill="#bd5229" font-weight="700" text-anchor="start">GPIO must not drive the SSR input or a contactor coil directly.</text>
-<rect x="36" y="1090" width="1128" height="45" rx="12" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
-<text x="56" y="1119" font-size="20" fill="#25362f" font-weight="700" text-anchor="start">Physical validation required: with kiln mains isolated, verify each connection before enabling heat.</text>
+<rect x="327" y="802" width="837" height="322" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
+<text x="350" y="840" font-size="25" fill="#173f35" font-weight="700" text-anchor="start">2. Connect the MOSFET switch module</text>
+<text x="350" y="873" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Required: active-high, low-side type; verify the exact module.</text>
+<text x="350" y="919" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">2 · +5 V power</text>
+<path d="M 624 912 L 737 912" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" marker-end="url(#power)"/>
+<text x="770" y="919" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">DC+ (nominal 5 V)</text>
+<text x="350" y="969" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">37 · BCM26 / D26</text>
+<path d="M 624 962 L 737 962" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" marker-end="url(#heat)"/>
+<text x="770" y="969" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">TRIG / PWM · 3.3 V logic</text>
+<text x="350" y="1019" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">14 · GND</text>
+<path d="M 624 1012 L 737 1012" fill="none" stroke="#7b8982" stroke-width="3" stroke-linecap="round" marker-end="url(#ground)"/>
+<text x="770" y="1019" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">DC− (power return)</text>
+<text x="350" y="1069" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">39 · GND</text>
+<path d="M 624 1062 L 737 1062" fill="none" stroke="#7b8982" stroke-width="3" stroke-linecap="round" marker-end="url(#ground)"/>
+<text x="770" y="1069" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">Logic GND, if separate</text>
+<text x="350" y="1101" font-size="18" fill="#52635b" font-weight="400" text-anchor="start">Power and logic grounds are common in this module arrangement.</text>
+<rect x="36" y="1086" width="264" height="255" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="56" y="1121" font-size="21" fill="#173f35" font-weight="700" text-anchor="start">One control supply</text>
+<text x="56" y="1154" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">Use the Pi USB supply.</text>
+<text x="56" y="1181" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">No extra 5 V supply.</text>
+<text x="56" y="1220" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">Budget for Pi/accessories,</text>
+<text x="56" y="1247" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">module consumption and</text>
+<text x="56" y="1274" font-size="18" fill="#25362f" font-weight="400" text-anchor="start">SSR input: up to 40 mA</text>
+<text x="56" y="1311" font-size="16" fill="#52635b" font-weight="400" text-anchor="start">Per supplied SSR reference.</text>
+<rect x="327" y="1146" width="837" height="195" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
+<text x="350" y="1184" font-size="25" fill="#173f35" font-weight="700" text-anchor="start">3. Connect only the SSR's DC input</text>
+<text x="350" y="1230" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">OUT+ (= DC+)</text>
+<path d="M 624 1223 L 737 1223" fill="none" stroke="#7654a6" stroke-width="3" stroke-linecap="round" marker-end="url(#power)"/>
+<text x="770" y="1230" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">SSR DC input +</text>
+<text x="350" y="1280" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">OUT− (switched return)</text>
+<path d="M 737 1273 L 624 1273" fill="none" stroke="#7b8982" stroke-width="3" stroke-linecap="round" marker-end="url(#ground)"/>
+<text x="770" y="1280" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">SSR DC input −</text>
+<text x="350" y="1315" font-size="18" fill="#bd5229" font-weight="700" text-anchor="start">Never connect SSR input − directly to Pi GND: it bypasses the switch.</text>
+<rect x="36" y="1363" width="1128" height="248" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="56" y="1398" font-size="21" fill="#173f35" font-weight="700" text-anchor="start">Trigger bias and OFF checks</text>
+<text x="56" y="1431" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">Add a suitable 10 kΩ pull-down from TRIG / PWM to module logic GND. Check the module input circuit.</text>
+<text x="56" y="1462" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">LOW = no heat; HIGH = heat request. Leave “Invert SSR control signal” OFF (gpio_heat_invert = False).</text>
+<text x="56" y="1493" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">A pull-down biases a floating input; it cannot override a GPIO driven HIGH. Verify boot and shutdown states.</text>
+<text x="56" y="1524" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">Header 5 V can stay live after OS shutdown. Check OFF while 5 V remains present and when power is removed.</text>
+<text x="56" y="1555" font-size="19" fill="#25362f" font-weight="400" text-anchor="start">Use timed ON/OFF heat requests for the AC SSR. The module's “PWM” name does not require fast PWM.</text>
+<text x="56" y="1586" font-size="19" fill="#bd5229" font-weight="700" text-anchor="start">GPIO must not drive the SSR input directly. Keep all SSR AC load terminals unwired during these checks.</text>
+<rect x="36" y="1633" width="1128" height="55" rx="12" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
+<text x="56" y="1668" font-size="20" fill="#25362f" font-weight="700" text-anchor="start">Physical validation required: with kiln mains isolated, verify each connection before enabling heat.</text>
 </svg>

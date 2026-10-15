@@ -2,7 +2,7 @@
 
 Created 15 October 2026 with the imagegen skill's approved API/CLI fallback,
 using `gpt-image-2`. The initial parts and mounting images used high quality,
-1536 × 1024 PNG. The wired overview uses a medium-quality generated base,
+1536 × 1024 PNG. The current MOSFET wired overview uses a medium-quality generated base,
 with connection lines and labels added locally. These illustrations cover
 component recognition, mounting and low-voltage connection overviews.
 They are not photographs of a completed or tested Raspberry Pi build.
@@ -14,6 +14,12 @@ and annotated PNG originals are retained in the workspace output.
 - [Parts layout](raspberry-pi-parts-generated.jpg)
 - [Assembly layout](raspberry-pi-assembly-generated.jpg)
 - [Wired assembly overview](raspberry-pi-wired-assembly-generated.jpg)
+
+The current wired overview uses the Raspberry Pi's 5 V header supply and a
+generic active-high, 3.3 V-compatible low-side MOSFET trigger switch module.
+It has no separate SSR-control supply or mechanical relay. The exact purchased
+module must meet the build guide's requirements; the image is not a verified
+product photograph. Earlier relay-version prompts below are retained as history.
 
 Use the [build guide's pin tables and schematic](../../builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
 for electrical connections. Component appearance and wire colors in generated
@@ -42,10 +48,10 @@ Replace the sensor board in Image 1 with the blue MAX31855 breakout from Image 2
 Correct the mounting of both circuit boards. The Raspberry Pi has exactly four gold-ringed mounting holes in its PCB, one near each corner. Put one nylon standoff directly BELOW each actual PCB mounting hole and one small screw THROUGH that same hole from above. All four screw heads must be centered in the gold PCB mounting holes and actually secure the board. Remove every mounting screw or tall pillar that stands beside the Pi rather than passing through it. Do not add extra PCB holes. Apply the same physically correct through-hole mounting to the sensor breakout's corner holes. The PCB undersides must stay clear of the mounting plate. Do not add floating hardware.
 Maintain photographic realism. No new labels, text, wiring connections, lights, mains components or other changes. This remains an unpowered arrangement BEFORE wiring, not a finished or tested controller.
 
-## Wired assembly addition
+## Earlier relay wiring overview (superseded)
 
 Requested 15 October 2026: add the SSR and the connections between components.
-The final image shows a Raspberry Pi, MAX31855, compatible active-low relay,
+That version showed a Raspberry Pi, MAX31855, compatible active-low relay,
 three-phase DC-input SSR on a heatsink, and separate regulated 5 V SSR-control
 supply. The relay's logic/coil supply remains module-specific; its callout is
 deliberately separate from the drawn SSR-control loop. AC load terminals and NC
@@ -56,7 +62,7 @@ not published. A second edit made an unwired component base. Connection paths,
 the pull-up branch, terminal labels and numbered legend were drawn locally from
 the guide's connection table. This overlay shows the electrical relationships;
 generated component geometry is not an actual pin-position or drilling template.
-The final image is a 1536 × 1184 JPEG web copy; the generated base and annotated
+That version used a 1536 × 1184 JPEG web copy; the generated base and annotated
 PNG are retained in the workspace output.
 
 ### Initial wired-image prompt
@@ -84,3 +90,38 @@ Make ONLY these corrections:
 5. Replace the ventilated metal 5 V supply case with an insulated matte-black plastic DC supply block in the same position. Keep a single insulated power-input cable leaving the right edge. The only exposed connections on its front are two small low-voltage output terminals marked +5 V and 0 V, both unwired. No mains terminals or invented certification marks.
 
 Do not draw any new interconnecting wires. Do not add extra components, labels, arrows or current ratings. Do not change the positions or enlarge the parts. Preserve realistic small circuit boards, correct natural shadows and readable original two callouts. The actual connections will be added separately from a verified connection map.
+
+## Current Pi-powered MOSFET overview
+
+Requested 15 October 2026: use the Raspberry Pi's 5 V supply and replace the
+mechanical relay with a MOSFET trigger switch module. The edit used the earlier
+unwired component base as its input, preserving the Pi, sensor and SSR while
+removing the external supply and replacing the relay. It used `gpt-image-2`,
+medium quality, 1536 × 1024, through the approved imagegen API/CLI fallback.
+
+Wires and labels were added locally from the guide's connection map. The
+illustrated module must be an active-high, 3.3 V-compatible, nominal-5 V,
+low-side switch: DC+ feeds OUT+, and the MOSFET switches OUT− to DC−.
+Pi physical pin 2 supplies DC+; pin 14 supplies the DC− ground return;
+pin 37 / BCM26 supplies TRIG; pin 39 supplies the separate logic GND.
+A 10 kΩ pull-down branches from TRIG to logic GND. OUT+ and OUT− connect
+only to the SSR's DC + and −, respectively. The SSR negative input does not
+connect directly to Pi ground. No GPIO signal is powered from 5 V.
+
+The final image is a 1536 × 1064 JPEG, with the wiring and numbered legend
+overlaid on a cropped generated base. Terminal positions are illustrative;
+the pin table, schematic and actual module documentation govern assembly.
+The unannotated base and annotated PNG are retained in the workspace output.
+This replaces the relay/separate-supply version at the same published path.
+
+### MOSFET replacement prompt
+
+Use case: precise-object-edit.
+Asset type: photographic-style component base for a beginner Raspberry Pi kiln-controller assembly guide. This base will receive an exact wiring overlay afterward.
+Image 1 is the edit target, an unwired generated controller layout. Preserve the composition, camera, light, Raspberry Pi at left, blue MAX31855 above middle, gray enclosure and wood workbench. Preserve the three-phase DC-input SSR at right on its finned aluminium heatsink, its SIX large AC load terminals under clear guards, and the separate small DC + and DC - terminals. Keep the Pi's black USB-C power lead connected correctly.
+
+Make these two changes:
+1. Replace ONLY the blue mechanical relay board inside the enclosure with a compact blue MOSFET Field-Effect Transistor Trigger Switch Drive Module PWM, in the same lower-middle footprint and orientation. It must look like a small logic-level MOSFET switch module, with two flat black MOSFET packages and small supporting electronics, NO cube relay. The conceptual module has six separate connection positions: a two-position input power terminal at its TOP edge marked DC+ and DC-, a small two-position signal header at its LEFT edge marked TRIG and GND, and a two-position green screw terminal at its RIGHT edge marked OUT+ and OUT-. Keep every connection visibly separate. The two right output screw terminals should occupy approximately the previous COM and NO positions; there is no third NC terminal. Mount the module through its PCB mounting holes on short standoffs. Remove the previous relay power pigtail, its connector, and the entire 'Relay power: per module datasheet' paper callout. Do not invent a current rating, certification mark or exact brand/model number.
+2. Completely remove the external black 5 V supply block from the lower right, including its input cable and any labels. Restore the natural bare wood workbench in its place. The Pi's USB power lead remains the only incoming control-power cable. Preserve the blank area for a later explanatory wiring legend.
+
+Do NOT draw any interconnecting wires. Keep the Pi header, sensor signal contacts, MOSFET terminals and SSR DC input terminals empty for the later accurate wiring overlay. Keep the two loose thermocouple lead ends resting below the sensor, as in the input. Keep the nearby text 'AC load wiring omitted'. Preserve all unrelated parts and their exact positions as closely as possible; do not change the Pi or sensor connector counts. There must be no mechanical relay, no external low-voltage supply block, no relay pigtail, and no stray old wiring or labels. This is a generated conceptual illustration, not a photograph or pin-position reference for a tested build.

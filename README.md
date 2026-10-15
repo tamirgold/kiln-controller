@@ -76,15 +76,16 @@ label alone does not mean it can be driven directly from GPIO.
 Follow the [getting-started guide](docs/GETTING-STARTED.md) for the full sequence.
 Each board guide keeps the wiring, software profile and commands together.
 
-[![Generated connection overview showing Raspberry Pi, sensor, relay driver, SSR on a heatsink and separate 5 V control supply](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)
+[![Generated connection overview showing Raspberry Pi, sensor, MOSFET switch and SSR on a heatsink, powered from the Pi's 5 V header](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)
 
-*Generated assembly with a wiring overlay. The relay switches the SSR's
-low-voltage control input; the SSR's AC load terminals are shown unwired.
+*Generated assembly with a wiring overlay. A compatible active-high MOSFET
+module switches the SSR's low-voltage control input using the Pi's 5 V supply;
+the SSR's AC load terminals are shown unwired.
 Use the [Pi guide's pin and connection tables](docs/builds/raspberry-pi.md#heat-request-output)
-for electrical connections and the chosen relay's schematic for its power pins.*
+for electrical connections and the chosen module's schematic for its terminals.*
 
-**1** Raspberry Pi · **2** MAX31855 · **3** Relay/driver ·
-**4** SSR and heatsink · **5** Regulated 5 V SSR-control supply.
+**1** Raspberry Pi · **2** MAX31855 · **3** MOSFET switch module ·
+**4** SSR and heatsink.
 
 1. **Prepare the SD card and network.** Flash the recommended OS, create your
    account, connect the board and find its address. **Check:** you can log in.

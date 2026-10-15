@@ -31,7 +31,8 @@ mounting and the exact wiring diagram.
 | 1 | SD reader | Needed to flash the OS from your computer. |
 | 1 | MAX31855 K-type converter breakout | Use a reputable module with a published schematic and 3.3 V logic compatibility. The [Adafruit MAX31855 guide](https://learn.adafruit.com/thermocouple) explains the labeled breakout. Check whether pin headers and screw terminals need soldering. |
 | 1 | Ungrounded, electrically insulated K-type kiln thermocouple | Probe/sheath temperature rating and mounting must suit the kiln; do not use an ordinary low-temperature oven probe. Match any extension wire/connectors to type K. Identify T+ and T− from their labels, not wire color alone. |
-| 1 | GPIO-compatible output interface | Input must suit 3.3 V logic; output must drive the chosen SSR's control input. Record exact module, supply requirements, polarity and controller-power-loss behavior. See below before buying. |
+| 1 | GPIO-compatible output interface | Pi example: an active-high, low-side MOSFET trigger switch module accepting nominal 5 V power and 3.3 V logic, with an input safe for Pi GPIO. It switches the SSR's DC control current. The Orange Pi example retains its relay interface. Check the exact module requirements below. |
+| 1 for the Pi example | Suitable 10 kΩ resistor | Pulls the MOSFET trigger input to logic ground when GPIO is floating; check compatibility with the module's input circuit. |
 | As needed | Jumper leads / terminal connectors / low-voltage wire | Useful for bench assembly, with proper permanent connectors and strain relief for the finished controller. Never use a solderless breadboard for mains. |
 | As needed | Enclosure, spacers and cable glands | Keep heat, mains wiring and sensor/logic wiring separated; ground exposed metal where required. |
 | 1 | Local network connection | Ethernet or Wi-Fi supported by your board/OS, with a browser on a phone/computer. No separate touch screen is required. |
@@ -45,6 +46,22 @@ photographs of a verified Raspberry Pi build of this fork.
 
 ## Choose the output interface deliberately
 
+The [Raspberry Pi example](builds/raspberry-pi.md#heat-request-output) uses a
+**MOSFET Field-Effect Transistor Trigger Switch Drive Module PWM** requiring an
+**active-high 3.3 V trigger, nominal 5 V supply and low-side output**. This generic
+product name is not an exact part number or evidence of compatibility. Check
+that DC+ connects to OUT+ and OUT− is the return switched to DC−, and that the
+trigger input neither exposes GPIO to 5 V nor draws excessive GPIO current.
+
+The Pi's normal USB supply powers the module and SSR control input through
+header pin 2 (+5 V). Include the SSR reference's **40 mA maximum input current**,
+module consumption and Pi/accessory loads in the power budget. Pi ground and
+module power/logic ground are common. **SSR input − goes to switched OUT−, not
+directly to Pi ground**, which would bypass the switch. A suitable 10 kΩ
+trigger-to-ground pull-down provides a low bias when GPIO is floating.
+Leave **Invert SSR control signal off** for this active-high arrangement.
+Do not add a second powered 5 V supply to the Pi header or apply 5 V to GPIO.
+
 The documented Orange Pi assembly uses an **active-low relay interface**. Its
 contacts switch regulated 5 V into a **3–32 VDC-input SSR**. The supplied SSR
 reference lists up to **40 mA input current**; do not connect it directly to a
@@ -53,18 +70,21 @@ GPIO pin. Read the [relay/SSR diagram](HARDWARE.md#4-connect-the-relay-and-ssr-i
 Before buying a substitute, obtain its actual schematic/datasheet and establish:
 
 - Input works at 3.3 V without sending higher voltage into the board.
-- Supply and ground connections, and the role of any VCC/JD-VCC jumper.
+- Supply, ground and switched-output connections, including any VCC/JD-VCC
+  jumper on a relay module.
 - Whether HIGH or LOW requests heat, and which setting produces OFF.
 - Its output can supply/switch the SSR input current at the required voltage.
-- Its output stays OFF at boot and when controller power is lost while the
-  driver/SSR supply stays on.
+- Its OFF behavior at boot, process exit, OS shutdown and controller power loss.
+  Pi header 5 V can stay energized after shutdown, and a pull-down cannot
+  override a GPIO that remains HIGH.
 - Its permitted switching rate. The documented mechanical relay uses a
-  30-second cycle; a different interface needs appropriate timing.
+  30-second cycle; a different interface needs appropriate timing. “PWM” in the
+  MOSFET board's name does not mean high-frequency PWM should drive the AC SSR.
 
 The current documentation does not establish an exact universally recommended
-relay-module SKU. That choice remains a build-validation item, not a “buy any
-relay” instruction. A controller-powered pull-up alone cannot prove safe OFF
-behavior after controller power is lost.
+MOSFET or relay module SKU. Record the purchased module and verify its behavior
+in the physical build. An input-bias resistor alone does not establish that
+the output switches off under every controller fault.
 
 ## Kiln power components
 
