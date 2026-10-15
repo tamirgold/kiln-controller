@@ -2,7 +2,8 @@
 
 Created 15 October 2026 with the imagegen skill's approved API/CLI fallback,
 using `gpt-image-2`. The initial parts and mounting images used high quality,
-1536 × 1024 PNG. The current MOSFET wired overview uses a medium-quality generated base,
+1536 × 1024 PNG. The current ceramic-probe parts image and MOSFET wired
+overview use medium-quality generated bases,
 with connection lines and labels added locally. These illustrations cover
 component recognition, mounting and low-voltage connection overviews.
 They are not photographs of a completed or tested Raspberry Pi build.
@@ -29,7 +30,7 @@ images are not a purchasing specification or polarity reference.
 
 ## Generation prompts
 
-### 1. raspberry-pi-parts-generated.jpg
+### 1. Original parts layout (superseded)
 
 Use case: product-mockup. Asset type: photographic-style educational parts layout for a beginner GitHub build guide. Primary request: a clear top-down arrangement of the low-voltage parts for preparing a Raspberry Pi 4-based kiln controller on a light neutral workbench. Subject: one Raspberry Pi 4 Model B with a 40-pin header and recognisable USB-C, two micro-HDMI, four USB and Ethernet connectors; one microSD card with USB card reader; one matching USB-C power supply; one MAX31855 thermocouple breakout with a two-screw thermocouple terminal; one metal-sheathed K-type thermocouple with cable; a small bundle of female jumper leads; four mounting standoffs. All parts separate and unpowered. Style: realistic product-photography illustration with clear component shapes, soft daylight and restrained shadows. Enough separation to identify every part at phone size. Landscape overhead composition, grouped components, uncluttered, generous margins. Constraints: no connected wires, no kiln, no mains wiring, no SSR, no output-driver part, no invented pin labels, no logos or certification marks. Do not imply this is a complete shopping kit. No text inside the generated image; labels and generated-image disclosure will be ordinary Markdown beside it. Accurate and consistent component scale.
 
@@ -176,3 +177,40 @@ Use case: precise-object-edit. Change ONLY the internal thermocouple cable in Im
 The external probe already connects through the front-wall gland correctly. Complete the SAME continuous braided cable INSIDE the low-voltage compartment: from the gland, route it across clear backplate to the left of the MOSFET module, then through the narrow clear gap ABOVE the MOSFET module and BELOW the Raspberry Pi, then up toward the bottom of the MAX31855 sensor board. It must not pass beneath or across any PCB and must not enter the SSR compartment. End the braid immediately below the sensor's two-position green thermocouple terminal block. From the braid, exactly TWO short insulated conductors enter the TWO thermocouple terminals, one per terminal. Remove the existing disconnected loose wire tails by the sensor and the dead-ended cable behind the MOSFET. Show one continuous connected probe/cable assembly from the external sensing tip to the sensor input. No loose or exposed bare wire ends.
 
 Keep this the only electrical cable connection in the base image except the existing Pi USB-C power lead. Do not add GPIO wires, MOSFET power/trigger/output wires, an external supply, a relay, labels, markers or any other objects. The six SSR AC terminals remain unwired. Keep all dimensions, camera, light, materials and other component geometry unchanged. This is a targeted cable-continuity correction, not a new composition.
+
+## Current parts: MOSFET module and ceramic K-type probe
+
+Requested 15 October 2026: align every current parts description with the
+MOSFET build and make the K-type thermocouple visibly ceramic-sheathed.
+The parts illustration now contains nine labeled groups: Pi, SD card/reader,
+USB supply, MAX31855, long white ceramic-sheathed K-type probe, jumper leads,
+insulating nylon spacers, MOSFET module and 10 kΩ pull-down resistor.
+The enclosure and SSR/heatsink remain in the separate assembly illustration.
+
+The approved imagegen API/CLI fallback used `gpt-image-2`, medium quality and
+1536 × 1024 output. Input 1 was the previous unannotated parts layout; input 2
+was a crop of the MOSFET module from the earlier generated component base.
+Number markers and the resistor's value label were added locally. The final
+JPEG replaces `raspberry-pi-parts-generated.jpg`; the base and annotated PNG
+are retained in workspace output. The original metal-probe prompt above is
+superseded history, not a description of the current asset. The illustration
+does not establish an exact part number, temperature rating or insulation test.
+
+### Parts replacement prompt
+
+Use case: precise-object-edit.
+Asset type: photographic-style parts overview for the current Raspberry Pi kiln-controller build guide.
+Image 1 is the edit target: the existing clean parts flat lay on a warm off-white surface. Image 2 is a component reference ONLY for the blue MOSFET trigger switch module's appearance. Keep the same restrained natural product-photo style, realistic shadows and overhead view. Recompose the flat lay as needed so every item stays separate and clearly identifiable.
+
+Update the parts to match the current build. Show exactly these NINE numbered categories of loose, unconnected parts, without actually printing any numbers or captions (those will be added afterward):
+1. One recognizable Raspberry Pi 4 board, with 40-pin header, USB-C, two micro-HDMI sockets, audio socket, Ethernet and USB ports as in Image 1.
+2. One microSD card and one USB card reader placed together.
+3. One black USB-C Raspberry Pi power adapter and its coiled cable, as in Image 1; this is the only power supply.
+4. One small blue MAX31855 converter module with exactly TWO green thermocouple screw terminals and accessible signal-header contacts, as in Image 1.
+5. One visibly CERAMIC-SHEATHED K-type kiln thermocouple: a long slender smooth WHITE ceramic protection tube with a closed tip, metal transition ferrule at the other end, and attached silver braided extension lead ending in two separate insulated conductors. It should resemble a ceramic kiln thermocouple, not a short exposed metal temperature bolt, not a thermistor, not a clear tube and not a screwdriver. Arrange the long white probe along the lower part of the image with its cable in a loose coil so the entire probe is easy to see. Replace the existing short metal probe completely; there must be only ONE thermocouple.
+6. A small group of color-coded insulated jumper leads with fitted connector housings, as in Image 1.
+7. Four short INSULATING nylon mounting standoffs (replace the brass standoffs in Image 1).
+8. One blue MOSFET Field-Effect Transistor Trigger Switch Drive Module PWM resembling Image 2: two FLAT black MOSFET packages, a two-position DC+/DC- power terminal, a separate two-position TRIG/GND signal header and two-position OUT+/OUT- output terminal. Exactly six separate connection positions. It must not look like a cube mechanical relay. No COM/NO/NC labels.
+9. One small axial 10 kΩ resistor with brown-black-orange-gold bands and short straight leads, lying separately close to the MOSFET board but not connected.
+
+Give the MOSFET and sensor enough breathing room to distinguish them. Keep everything at plausible relative scale with generous neutral gaps for the later numbered markers. Small components may be arranged for recognition, but do not enlarge the resistor to the size of a board. There is no enclosure or SSR in this flat lay; those are shown in the separate assembled-box image. Do not add extra circuit boards, tools, relay cubes, loose power modules, batteries, certification marks, current ratings, text, captions, symbols or connections. Keep the two original blue/green board categories distinct and include the new blue MOSFET as the third circuit board beside the Pi and sensor.

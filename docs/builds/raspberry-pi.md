@@ -22,21 +22,32 @@ physical validation; software tests on a Linux computer do not verify this OS im
 > isolated throughout software, sensor and output checks. A qualified electrician
 > must complete and verify the kiln power and independent safety circuit.
 
+**The build in this guide:** a Raspberry Pi, MAX31855 sensor converter, MOSFET
+switch module and SSR/heatsink share one larger divided enclosure. The
+ceramic-sheathed K-type thermocouple stays outside the electronics box. The Pi's
+normal USB supply powers the control circuit, including the MOSFET and SSR input through
+the Pi's 5 V header; no separate SSR-control supply is needed.
+
 ## 1. Prepare the SD card and connect
 
 You need the [listed parts and tools](../PARTS.md), a computer with an SD reader,
 and access to the same local network as the Pi. Start with the board, SD card and
 board power supply only; leave the driver and kiln power disconnected.
+Use the correct supply for your board: USB-C for Pi 4, micro-USB for Pi 3;
+see the [power-supply requirements](../PARTS.md#low-voltage-controller).
 
-[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](../images/hardware/raspberry-pi-parts-generated.jpg)](../images/hardware/raspberry-pi-parts-generated.jpg)
+[![Generated Raspberry Pi parts layout with a MOSFET switch module, 10 kΩ resistor and white ceramic-sheathed K-type thermocouple](../images/hardware/raspberry-pi-parts-generated.jpg)](../images/hardware/raspberry-pi-parts-generated.jpg)
 
-*Generated illustration of the board-preparation and sensor parts. Component
-appearance varies; use the parts table and your module's markings. The output
-driver and kiln power components are selected separately.*
+*Generated illustration of the Pi control-circuit parts, including the MOSFET
+module and ceramic-sheathed probe. Start with the Pi, card and USB supply for
+software setup; use the other components in step 3. The enclosure and SSR/heatsink
+appear in the assembled view below. Use actual module markings when buying.*
 
 **Parts shown:** **1** Raspberry Pi; **2** microSD card and reader;
-**3** USB-C power supply; **4** MAX31855 sensor converter; **5** K-type
-thermocouple; **6** jumper leads; **7** mounting spacers.
+**3** USB-C power supply; **4** MAX31855 sensor converter;
+**5** ceramic-sheathed K-type thermocouple; **6** jumper leads;
+**7** insulating mounting spacers; **8** MOSFET switch module;
+**9** 10 kΩ pull-down resistor.
 
 1. Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on your
    computer. Select your exact Pi model. For the **Bookworm 64-bit Lite** image
@@ -110,8 +121,8 @@ same network. Use the Pi's IP if the name does not resolve.
 
 **Check:** the page identifies a simulated kiln. Try a sample schedule to learn
 the controls. The preview does not use real GPIO; successful simulation does not
-prove the sensor or output driver is connected correctly. End the simulated firing and
-press Ctrl+C in the SSH terminal before continuing.
+prove the sensor or output driver is connected correctly. End the simulated
+firing and press Ctrl+C in the SSH terminal before continuing.
 
 **If installation fails:** keep the first error, verify your OS/model and review
 the [development/setup notes](../DEVELOPMENT.md). Do not force Blinka to identify
@@ -121,29 +132,58 @@ the Pi as an Orange Pi. GPIO imports use the real board identity.
 
 Disconnect all controller power before assembly or wiring.
 
-[![Generated illustration of Raspberry Pi and sensor mounting before wiring](../images/hardware/raspberry-pi-assembly-generated.jpg)](../images/hardware/raspberry-pi-assembly-generated.jpg)
+[![Generated conceptual Raspberry Pi, sensor, MOSFET switch and SSR assembly in one larger divided enclosure, with the thermocouple probe outside, using Pi header 5 V](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
 
-*Generated assembly illustration: arrange and secure the low-voltage parts
-before wiring. The output-interface space is left open because its exact module
-determines its mounting and connections. Follow the pin table below for wiring.*
+*Generated assembly with a wiring overlay. The Pi, sensor and MOSFET module sit
+on one side of the divider; the SSR and heatsink sit on the other. The probe is
+outside, with its cable entering through a gland. Use the pin and connection
+tables for wiring and the actual parts for mounting dimensions. The SSR's AC
+load terminals are shown unwired.*
 
-**1** Raspberry Pi · **2** Sensor converter · **3** Space for the chosen output interface.
+**1** Raspberry Pi · **2** MAX31855 · **3** MOSFET switch module ·
+**4** SSR and heatsink · **5** Ceramic-sheathed K-type thermocouple.
 
-1. Test-fit the Pi so its power, network and USB ports and microSD slot remain
-   accessible. Allow the cooling clearance required by your board and enclosure.
-2. Secure the Pi and converter through their own mounting holes on correctly
-   sized insulated standoffs. Use the actual board holes, not the generated
-   image, as the drilling template. Keep their
-   undersides clear of the mounting plate and loose metal, and leave the headers
-   and sensor terminals accessible. Position the converter away from the Pi's heat.
-3. Plan strain-relieved cable entries and leave space for the chosen output
-   interface. Route the thermocouple cable separately from power wiring; keep
-   everything unconnected until you have checked each module's markings.
+### Arrange and mount the parts
+
+Gather the four modules shown above, the ceramic-sheathed thermocouple, a
+suitable 10 kΩ pull-down resistor, the enclosure/divider, insulated standoffs, cable glands
+and low-voltage connectors. Check the [MOSFET requirements](#heat-request-output)
+before choosing its mounting holes or wiring. This Pi build uses a MOSFET
+switch module in place of the Orange Pi example's mechanical relay.
+
+1. **Choose a box that fits the actual parts.** Allow room for all four modules,
+   their connectors, cable bends and the SSR's specified heatsink and cooling
+   clearance. The illustration does not set the box dimensions or validate its
+   cooling. Keep the electronics enclosure outside the hot kiln chamber.
+2. **Separate the two areas.** Put the Pi, MAX31855 and MOSFET module in the
+   low-voltage area. Put the SSR and its heatsink in the adjacent power area,
+   with a suitable divider and cooling arrangement. Keep the Pi's power, network,
+   USB ports and microSD slot accessible; position the converter away from heat.
+3. **Mount the boards and SSR.** Secure the Pi, converter and MOSFET module
+   through their own mounting holes on correctly sized insulated standoffs.
+   Keep their undersides clear of the mounting plate and loose metal. Fit the
+   SSR to its heatsink using its specified thermal interface and fasteners.
+   Use the actual parts as drilling templates; leave all terminals accessible.
+4. **Fit the cable entries.** Route the Pi's USB power lead into the low-voltage
+   area. Keep the thermocouple probe outside the box and bring its lead through
+   a separate strain-relief gland in that same area, directly toward the MAX31855.
+   Route the two SSR control wires through a protected opening in the divider;
+   keep them separate from the eventual mains wiring.
+5. **Connect the control circuit using the tables below.** Wire the sensor,
+   Pi-powered MOSFET module, pull-down resistor and SSR's DC input. The SSR's
+   AC load terminals stay unconnected during these checks. Label the cables
+   and inspect each connection before restoring USB power in step 4.
+
+The probe lies on the workbench in the illustration to show it clearly. Its
+final sensing position is in the kiln, using its specified mounting and
+insulation; the converter and control box remain outside. The electrician
+completes the power-area wiring and protective earth in step 5.
 
 Locate **pin 1 from the board's marking**. Use the schematic and pin tables below
-for every electrical connection; the generated illustration shows placement
-only. The diagram is a schematic and pin locator; it is not a photograph of a
-verified assembly. A board's orientation on your bench can differ.
+for every electrical connection; the generated image shows the arrangement and
+connection overview, not exact pin positions. The diagram is a schematic and
+pin locator; it is not a photograph of a verified assembly. A board's orientation
+on your bench can differ.
 
 [![Raspberry Pi 3/4 physical-pin locator and MAX31855 sensor/output connections](../images/hardware/raspberry-pi-wiring.svg)](../images/hardware/raspberry-pi-wiring.svg)
 
@@ -163,9 +203,11 @@ you do not need to enable a separate hardware SPI overlay for this route. Keep
 other processes from using the same pins. Physical pin numbers are not BCM
 numbers: physical 23 is BCM11, not BCM23.
 
-Connect an **ungrounded, electrically insulated K-type thermocouple** to T+ and
-T−. Use the correct type-K extension cable/connector. Keep the probe insulated
-from elements and the converter away from the hot chamber and mains wiring.
+Connect a **ceramic-sheathed, ungrounded, electrically insulated K-type kiln
+thermocouple** to T+ and T−. Its protection tube and assembly must be rated for
+the firing temperature. Use the correct type-K extension cable/connector. Keep
+the probe insulated from elements and the converter away from the hot chamber
+and mains wiring.
 Module markings govern: on Adafruit breakouts **3Vo is an output**, not VIN.
 
 ### Heat-request output
@@ -199,17 +241,6 @@ Allow for the SSR reference's **40 mA maximum input current**, the module's own
 consumption, and all Pi/accessory loads when checking the supply and wiring
 budget. Do not connect an additional powered 5 V supply to the header.
 
-[![Generated conceptual Raspberry Pi, sensor, MOSFET switch and SSR assembly in one larger divided enclosure, with the thermocouple probe outside, using Pi header 5 V](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
-
-*Generated assembly with a wiring overlay. All four electronic components share
-one larger enclosure, with a divider beside the SSR. The thermocouple probe is
-outside, with its cable routed through a gland. Use the pin and connection tables as the
-electrical reference; actual module layouts vary. The SSR's AC load terminals
-are shown unwired.*
-
-**1** Raspberry Pi · **2** MAX31855 · **3** MOSFET switch module ·
-**4** SSR and heatsink · **5** K-type thermocouple.
-
 | From | To |
 | --- | --- |
 | Module OUT+ (connected internally to DC+) | SSR DC control input + |
@@ -228,9 +259,11 @@ leave **Invert SSR control signal off** (`gpio_heat_invert = False`).
 The word “PWM” in the module's name does not call for high-frequency PWM here:
 the controller uses timed ON/OFF heat requests for the AC SSR.
 
-Mount the finished low-voltage assembly securely, with labeled cables, strain
-relief and separation from power wiring. Do not treat loose bench jumper wires
-as the finished kiln enclosure.
+**Check before power:** match every connection to the table and actual terminal
+labels. Confirm the 10 kΩ resistor goes from TRIG to logic GND, the SSR's
+negative input goes only to switched OUT−, and no loose strands or fasteners
+can touch the boards. Secure the cables and strain relief; temporary bench
+jumper wires are not a finished enclosure installation.
 
 ## 4. Check sensing, polarity and OFF behavior
 
@@ -290,8 +323,10 @@ the general output-toggle script as a routine check on a powered kiln.
 
 ## 5. Complete the power installation and optional service
 
-Have the electrician verify the kiln's power circuit, protective earth, SSR
-cooling, isolation, stop/interlock chain and independent temperature limiter
+Have the electrician complete the enclosure's power compartment and verify
+the kiln's power circuit, protective-earth bonding of exposed metal, separation
+from the low-voltage area, SSR cooling in the chosen enclosure, isolation,
+stop/interlock chain and independent temperature limiter
 with its own sensor and manual reset. The [power diagram](../HARDWARE.md#5-understand-the-three-phase-power-path)
 is conceptual; use actual nameplate and installation ratings.
 

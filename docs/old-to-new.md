@@ -1,7 +1,10 @@
 Migrating from Old to New kiln-controller Code
 ==========
 
-This describes how to migrate from the old version of the code to the new.
+This is a historical upstream migration note for the 2023 backend rewrite.
+For the current Pi MOSFET build, use the [Raspberry Pi guide](builds/raspberry-pi.md);
+for updates to an existing installation, use [Maintenance](MAINTENANCE.md).
+The earlier pin and wiring assumptions below are not the current build recipe.
 
 ## History
 

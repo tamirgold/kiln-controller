@@ -71,13 +71,26 @@ recipe. Use the Orange Pi documentation for the existing deployment example.
 ## Gather the parts and tools
 
 Read [the parts list](PARTS.md) before ordering. It identifies the sensor,
-power supply, connectors, soldering decisions, output interface and separate
-kiln-power work. The existing output-interface example is module-specific;
-substitutes need electrical verification.
+power supply, connectors, soldering decisions and kiln-power components.
+The Pi build uses a MAX31855 with a **ceramic-sheathed, ungrounded K-type kiln
+thermocouple**, an **active-high MOSFET trigger switch module** with a
+**3.3 V-compatible trigger, nominal 5 V supply and low-side output**, and a
+**10 kΩ trigger pull-down resistor**. Choose a probe rated for the kiln and
+firing temperature, and check the exact MOSFET module against the Pi guide.
+
+The MOSFET switches the SSR's DC control input; the SSR switches kiln power.
+The Pi's USB supply powers the MOSFET and SSR input through its 5 V header,
+so this arrangement needs no separate SSR-control supply. The recorded Orange
+Pi deployment uses its active-low mechanical relay interface; follow its own
+wiring guide. Substitutes need electrical verification.
 
 Keep the controller, sensor converter and power supplies outside the hot chamber.
-Keep mains and low-voltage wiring separated in a suitable enclosure. Your
-electrician selects the switching and protection for the actual kiln.
+The Pi arrangement fits the Pi, MAX31855 and MOSFET on one side of a larger
+divided enclosure, with the SSR and heatsink on the other. The thermocouple
+probe stays outside the electronics box and its lead enters through a gland;
+its final sensing position is in the kiln. Keep mains and low-voltage wiring
+separated. Your electrician selects the switching, cooling and protection
+for the actual kiln.
 
 ## Follow these six steps
 

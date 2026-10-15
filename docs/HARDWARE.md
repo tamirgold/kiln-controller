@@ -1,9 +1,15 @@
-# Hardware installation, made simple
+# Orange Pi hardware installation
 
 This guide connects the **Orange Pi Zero 2W**, a **MAX31855 + K-type thermocouple**,
 and a **3–32 VDC-input SSR** to an electric kiln. The controller has **one heat
 request**: a suitable three-phase power stage switches the kiln together. It does
 not control three temperature zones independently.
+
+This is the existing Orange Pi **active-low mechanical-relay** arrangement.
+For the current Raspberry Pi 3/4 build, use the [Raspberry Pi guide](builds/raspberry-pi.md):
+it uses an active-high low-side MOSFET module powered from the Pi's 5 V header,
+a 10 kΩ trigger pull-down, and a ceramic-sheathed, ungrounded K-type probe.
+The two output interfaces have different wiring and polarity settings.
 
 **Have a qualified electrician wire and verify the kiln mains circuit.** The
 three-phase drawing explains the arrangement; it does not specify cable sizes,

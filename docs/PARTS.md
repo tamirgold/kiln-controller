@@ -9,15 +9,18 @@ profile still needs a physical build report. Prices and availability vary.
 
 ## Low-voltage controller
 
-[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](images/hardware/raspberry-pi-parts-generated.jpg)](images/hardware/raspberry-pi-parts-generated.jpg)
+[![Generated Raspberry Pi parts layout with a MOSFET switch module, 10 kΩ resistor and white ceramic-sheathed K-type thermocouple](images/hardware/raspberry-pi-parts-generated.jpg)](images/hardware/raspberry-pi-parts-generated.jpg)
 
-*Generated illustration of the board-preparation and sensor parts. Component
-appearance varies; use the parts table and your module's markings. The output
-driver and kiln power components are selected separately.*
+*Generated illustration of the Pi control-circuit parts, including the MOSFET
+module and ceramic-sheathed probe. Use the parts table and actual module
+markings when buying. The enclosure and SSR/heatsink appear in the assembled-box
+guide. Independent kiln protection is listed below.*
 
 **Parts shown:** **1** Raspberry Pi; **2** microSD card and reader;
-**3** USB-C power supply; **4** MAX31855 sensor converter; **5** K-type
-thermocouple; **6** jumper leads; **7** mounting spacers.
+**3** USB-C power supply; **4** MAX31855 sensor converter;
+**5** ceramic-sheathed K-type thermocouple; **6** jumper leads;
+**7** insulating mounting spacers; **8** MOSFET switch module;
+**9** 10 kΩ pull-down resistor.
 
 See the [Raspberry Pi build guide](builds/raspberry-pi.md) for SD-card preparation,
 mounting and the exact wiring diagram.
@@ -30,14 +33,15 @@ mounting and the exact wiring diagram.
 | 1 | microSD card | A reputable 16 GB or larger card is a practical starting choice for a Lite OS and records, not a tested lifetime/storage guarantee. Back up firing data. |
 | 1 | SD reader | Needed to flash the OS from your computer. |
 | 1 | MAX31855 K-type converter breakout | Use a reputable module with a published schematic and 3.3 V logic compatibility. The [Adafruit MAX31855 guide](https://learn.adafruit.com/thermocouple) explains the labeled breakout. Check whether pin headers and screw terminals need soldering. |
-| 1 | Ungrounded, electrically insulated K-type kiln thermocouple | Probe/sheath temperature rating and mounting must suit the kiln; do not use an ordinary low-temperature oven probe. Match any extension wire/connectors to type K. Identify T+ and T− from their labels, not wire color alone. |
-| 1 | GPIO-compatible output interface | Pi example: an active-high, low-side MOSFET trigger switch module accepting nominal 5 V power and 3.3 V logic, with an input safe for Pi GPIO. It switches the SSR's DC control current. The Orange Pi example retains its relay interface. Check the exact module requirements below. |
-| 1 for the Pi example | Suitable 10 kΩ resistor | Pulls the MOSFET trigger input to logic ground when GPIO is floating; check compatibility with the module's input circuit. |
+| 1 | Ceramic-sheathed, ungrounded K-type kiln thermocouple | Choose an electrically insulated probe with a ceramic protection tube, rated for the kiln's firing temperature and mounting. Ceramic appearance alone does not establish its rating or junction insulation. Match extension wire/connectors to type K; use T+ and T− markings, not wire color alone. |
+| 1 (Pi) | MOSFET trigger switch module | Active-high, low-side output; nominal 5 V power; 3.3 V-compatible trigger safe for Pi GPIO. Switches the SSR's DC control current. Sold under names such as “MOSFET Field-Effect Transistor Trigger Switch Drive Module PWM”; check the exact module requirements below. |
+| 1 (Orange Pi) | Active-low mechanical relay interface | For the recorded Orange Pi build: use its matching module schematic, supply connections and inversion setting. It is an alternative interface, not an extra part for the Pi MOSFET build. See the [Orange Pi wiring](HARDWARE.md#4-connect-the-relay-and-ssr-input). |
+| 1 (Pi) | Suitable 10 kΩ resistor | Pulls the MOSFET trigger input to logic ground when GPIO is floating; check compatibility with the module's input circuit. |
 | As needed | Jumper leads / terminal connectors / low-voltage wire | Useful for bench assembly, with proper permanent connectors and strain relief for the finished controller. Never use a solderless breadboard for mains. |
-| As needed | Enclosure, spacers and cable glands | Keep heat, mains wiring and sensor/logic wiring separated; ground exposed metal where required. |
+| 1 + fittings | Larger divided enclosure, insulating spacers and cable glands | Fit Pi/MAX31855/MOSFET on one side and SSR/heatsink on the other, with the specified cooling clearance. The ceramic probe stays outside; its lead enters the low-voltage area through a gland. Provide protected divider crossings and protective-earth bonding of exposed metal as required. |
 | 1 | Local network connection | Ethernet or Wi-Fi supported by your board/OS, with a browser on a phone/computer. No separate touch screen is required. |
 
-These inherited photographs help identify the kinds of components. They are not
+These inherited photographs help identify the board, sensor and connectors. They are not
 photographs of a verified Raspberry Pi build of this fork.
 
 | Raspberry Pi example | MAX31855 breakout example | Bench connectors example |
