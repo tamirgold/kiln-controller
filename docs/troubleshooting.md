@@ -1,6 +1,12 @@
 Troubleshooting
 ==========
 
+These are historical Raspberry Pi GPIO bench-test notes. For the current Pi
+3/4 MOSFET build and its pin assignments, start with the
+[Raspberry Pi build guide](builds/raspberry-pi.md). The pin-4 example below is
+an isolated GPIO test, not the heat-request connection. Disconnect the output
+interface and isolate kiln mains before testing individual GPIO pins.
+
 When I started this project, I'd never worked with RPi gpio.  I think I got
 just about everything backwards possible.  I blew up a MAX-31855 chip... POOF,
 up in smoke!

@@ -10,6 +10,13 @@ matching [build guide](GETTING-STARTED.md); the
 [documented Orange Pi installation](INSTALL.md) and
 [Raspberry Pi build guide](builds/raspberry-pi.md) have different board requirements.
 
+For the Pi guide's active-high MOSFET interface, leave **Invert SSR control
+signal** off (`gpio_heat_invert = false`). The recorded Orange Pi mechanical
+relay uses active-low control with inversion on. Match the control-cycle length
+to the actual interface; the Orange Pi's 30-second relay cycle is not a Pi
+MOSFET requirement. The Pi module's PWM label does not require fast PWM into
+the AC SSR.
+
 ## Save and apply changes
 
 1. Edit values in any category, then choose **Review & save** to inspect the

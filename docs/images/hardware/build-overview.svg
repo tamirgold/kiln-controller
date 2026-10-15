@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
 <title id="title">The build, at a glance — conceptual system schematic</title>
-<desc id="desc">A K-type thermocouple feeds a MAX31855 sensor module, which sends temperature to a Raspberry Pi or Orange Pi. The small computer communicates with a phone or laptop over the local network and sends a 3.3 volt heat request to a compatible driver. The driver operates the SSR control input. In the separate electrician-designed mains circuit, isolation and protection feed a safety contactor, an AC SSR power stage, and the kiln heaters. A separate high-limit controller with its own probe can stop heater power through the contactor independently of the Pi. This is a conceptual schematic; physical wiring and safety shutdown must be verified before heating.</desc>
+<desc id="desc">A K-type thermocouple, ceramic-sheathed and ungrounded for the current Raspberry Pi build, feeds a MAX31855 sensor module, which sends temperature to a Raspberry Pi or Orange Pi. The small computer communicates with a phone or laptop over the local network and sends a 3.3 volt heat request to a compatible output interface. The current Raspberry Pi build uses an active-high low-side MOSFET switch powered from the Pi header 5 V, with a 10 kiloohm trigger pull-down; the recorded Orange Pi build uses an active-low mechanical relay. Each interface operates only the SSR control input. In the separate electrician-designed mains circuit, isolation and protection feed a safety contactor, an AC SSR power stage, and the kiln heaters. A separate high-limit controller with its own probe can stop heater power through the contactor independently of the Pi. This is a conceptual schematic; physical wiring and safety shutdown must be verified before heating.</desc>
 <defs><style>text{font-family:Arial,Helvetica,sans-serif}</style>
 <marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
 <marker id="heat" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
@@ -17,8 +17,9 @@
 <text x="50" y="243" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">MAKER WORK · low-voltage sensing and control</text>
 <path d="M 702 187 L 702 266" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" marker-start="url(#signal)" stroke-dasharray="7 6"/>
 <rect x="50" y="275" width="217" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
-<text x="158.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">K-type probe</text>
-<text x="158.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Measures temperature</text>
+<text x="158.5" y="308" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">K-type probe</text>
+<text x="158.5" y="336" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Ceramic sheath</text>
+<text x="158.5" y="362" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Ungrounded</text>
 <rect x="309" y="275" width="219" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
 <text x="418.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">MAX31855</text>
 <text x="418.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Sensor module</text>
@@ -26,12 +27,13 @@
 <text x="701.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Raspberry Pi / Orange Pi</text>
 <text x="701.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Runs kiln-controller</text>
 <rect x="875" y="275" width="274" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
-<text x="1012.0" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Compatible driver</text>
-<text x="1012.0" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">3.3 V GPIO input</text>
+<text x="1012.0" y="308" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Output interface</text>
+<text x="1012.0" y="336" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Pi: MOSFET switch</text>
+<text x="1012.0" y="362" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Orange Pi: relay</text>
 <path d="M 270 327 L 304 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
 <path d="M 531 327 L 565 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
 <path d="M 836 327 L 870 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
-<text x="50" y="403" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Use suitable low-voltage supplies. GPIO never powers the heater or drives the SSR input directly.</text>
+<text x="50" y="403" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Use suitable low-voltage supplies. 3.3 V GPIO never powers the heater or drives the SSR input directly.</text>
 <path d="M 1012 380 L 1012 466 L 682 466 L 682 605" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
 <text x="50" y="456" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">Two connected jobs. One independent safety system.</text>
 <text x="834" y="446" font-size="18" fill="#bd5229" font-weight="400" text-anchor="middle">Low-voltage heat request</text>

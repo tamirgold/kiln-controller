@@ -94,7 +94,7 @@ hardware evidence.
 
 Run the relevant focused tests while changing behavior, then the full suite
 before proposing the change. A passing suite does not validate thermocouple
-accuracy, relay switching, GPIO timing, power-loss behavior or PID tuning on a
+accuracy, output switching, GPIO timing, power-loss behavior or PID tuning on a
 physical kiln. Report those checks separately using the
 [build-report template](supported-boards.md#how-a-board-becomes-a-documented-build).
 
@@ -169,7 +169,8 @@ the electrical installation.
 
 ## Other useful references
 
-- [Hardware and electrical interfaces](HARDWARE.md)
+- [Raspberry Pi MOSFET interface and build](builds/raspberry-pi.md)
+- [Orange Pi relay interface and kiln power](HARDWARE.md)
 - [Board alternatives and historical inventory](supported-boards.md)
 - [HTTP and WebSocket API](api.md)
 - [PID tuning](pid_tuning.md)

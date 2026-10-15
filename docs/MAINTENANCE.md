@@ -72,7 +72,8 @@ a real firing's saved progress.
    expected mode, settings, sensor status and idle state in the dashboard.
 
 For a new board or an altered driver, repeat the relevant commissioning checks
-from the [hardware guide](HARDWARE.md#6-check-in-this-order). Software tests do
+from the [Raspberry Pi build guide](builds/raspberry-pi.md) or
+[Orange Pi hardware guide](HARDWARE.md#6-check-in-this-order). Software tests do
 not verify physical wiring, temperature calibration, output polarity or kiln
 tuning.
 

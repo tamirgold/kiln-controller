@@ -45,9 +45,10 @@ separately in the compatibility guide.
 
 ![A thermocouple and sensor module report temperature to the controller; the controller sends a heat request through a driver, while a separate safety cutoff protects kiln power](docs/images/hardware/build-overview.svg)
 
-The small computer reads the temperature and **asks for heat**. A suitable driver
-and solid-state relay (SSR) switch the kiln power. An independent temperature
-limiter can disconnect the kiln even if the computer or SSR fails.
+The small computer reads the temperature and **asks for heat**. In the Raspberry
+Pi build, a MOSFET switch module switches the low-voltage control input of a
+solid-state relay (SSR). The SSR switches the kiln power. An independent
+temperature limiter can disconnect the kiln even if the computer or SSR fails.
 
 The controller provides **one heat request**. A suitable single-phase or
 three-phase power stage can use it; it does not independently control several
@@ -55,21 +56,28 @@ temperature zones.
 
 ## What you need
 
-Choose the board first, then follow the [complete parts and tools list](docs/PARTS.md).
+These are the parts for the Raspberry Pi build. Follow the
+[complete parts and tools list](docs/PARTS.md) for buying requirements. The
+recorded [Orange Pi build](docs/INSTALL.md) uses its active-low mechanical relay
+interface and matching wiring.
 
 | Part | Quantity | What it does |
 | --- | ---: | --- |
-| Raspberry Pi 3/4 or Orange Pi Zero 2W | 1 | Runs the controller and serves the web interface |
+| Raspberry Pi 3/4 | 1 | Runs the controller and serves the web interface |
 | Correct board power supply + microSD | 1 each | Powers the board and stores the software |
-| MAX31855 module + suitable ungrounded K-type thermocouple | 1 each | Measures kiln temperature |
-| Compatible 3.3 V output driver/interface | 1 | Connects the small GPIO signal to the SSR's control input |
-| Connectors, low-voltage wire, enclosure and mounting | As needed | Makes a secure controller assembly |
+| MAX31855 module + ceramic-sheathed, ungrounded K-type kiln thermocouple | 1 each | Measures kiln temperature; choose a probe rated for the kiln and firing temperature |
+| MOSFET trigger switch module | 1 | Active-high, 3.3 V-compatible trigger, nominal 5 V supply and low-side output; switches the SSR's DC control input |
+| Suitable 10 kΩ pull-down resistor | 1 | Connects the MOSFET trigger to logic ground to hold a floating input low |
+| Larger divided enclosure | 1 | Holds the Pi, MAX31855 and MOSFET on one side, with the SSR/heatsink on the other; the probe stays outside |
+| Connectors, low-voltage wire, mounting and cable glands | As needed | Secures the components and provides strain relief |
 | Computer with an SD reader and local network | Existing equipment | Prepares the board and opens the dashboard |
 | SSR, cooling and independent kiln protection | Kiln-specific | Selected and installed by the electrician |
 
 MAX31856 and other thermocouple types are [sensor alternatives](docs/PARTS.md#sensor-alternatives).
-The driver's exact part and polarity must match its guide. An SSR's input-voltage
-label alone does not mean it can be driven directly from GPIO.
+The Pi's normal USB supply powers the MOSFET module and SSR control input through
+header pin 2 (+5 V); no separate SSR-control supply is needed. The exact module
+and polarity must match the Pi guide. An SSR's input-voltage label alone does not
+mean it can be driven directly from GPIO.
 
 ## Build your controller
 

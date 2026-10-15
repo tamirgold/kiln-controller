@@ -6,10 +6,12 @@ Orange Pi Zero 2W installation on **4 October 2026**. They are a dated record,
 not a statement of today's live settings or recommended defaults for other
 kilns.
 
-For a new installation, follow the [getting-started guide](GETTING-STARTED.md),
-the [Orange Pi software guide](INSTALL.md) and the
-[hardware guide](HARDWARE.md). Inspect the current source and applied Settings
-instead of using this snapshot as a commissioning configuration.
+For a new installation, choose the matching route in the
+[getting-started guide](GETTING-STARTED.md). The [Raspberry Pi build](builds/raspberry-pi.md)
+uses an active-high MOSFET interface; the [Orange Pi software](INSTALL.md) and
+[hardware](HARDWARE.md) guides retain the relay arrangement recorded here.
+Inspect the current source and applied Settings instead of using this snapshot
+as a commissioning configuration.
 
 ## Source defaults and installation values recorded on 4 October 2026
 
@@ -55,5 +57,5 @@ do not prove a different board or configuration works.
 - [Historical Orange Pi setup](ORANGE-PI-SETUP.md) and
   [historical UI notes](UI-UPDATE.md): earlier deployment details.
 
-Use the current installation and hardware guides for instructions. Retain
+Use the current build guide for your board for instructions. Retain
 these records as context for changes, not as settings to copy wholesale.

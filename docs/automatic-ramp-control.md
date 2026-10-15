@@ -50,7 +50,7 @@ therefore remain separated after the slope improves.
 and measured rates (configured temperature units/hour), deadband, window length,
 next-check time, learned/applied trim, actual output, and correction count.
 `pidstats.base_out` is the temperature PID duty, `pidstats.out` is final duty,
-and `pidstats.ramp_trim` is the applied difference in percentage points. Relay
+and `pidstats.ramp_trim` is the applied difference in percentage points. Output
 on-time and energy accounting use the final command and actual energized time.
 Controller logs report applied corrections. Learning is intentionally not saved
 across a restart; the setting itself persists.

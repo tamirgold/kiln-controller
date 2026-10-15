@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1195" viewBox="0 0 1200 1195" role="img" aria-labelledby="title desc">
-<title id="title">Relay control: switching the SSR’s DC input</title><desc id="desc">Example for a verified 3–32 VDC on/off SSR input. Orange Pi physical pin 37 PI16 drives a compatible 3.3 volt active-low relay IN1, with a 10 kiloohm pull-up to 3.3 volts. Pin 39 is the shared relay logic reference for this non-isolated GPIO example. A regulated 5 volt SSR control supply goes through dry COM and NO contacts to the SSR positive input; its zero volt return goes to SSR negative. No kiln mains passes through the small relay.</desc>
+<title id="title">Orange Pi relay: switching the SSR’s DC input</title><desc id="desc">Example for a verified 3–32 VDC on/off SSR input. Orange Pi physical pin 37 PI16 drives a compatible 3.3 volt active-low relay IN1, with a 10 kiloohm pull-up to 3.3 volts. Pin 39 is the shared relay logic reference for this non-isolated GPIO example. A regulated 5 volt SSR control supply goes through dry COM and NO contacts to the SSR positive input; its zero volt return goes to SSR negative. No kiln mains passes through the small relay.</desc>
 <defs><style>text{font-family:Arial,Helvetica,sans-serif} .heading{font-weight:700} </style>
 <marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
 <marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
 <marker id="control" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
 <marker id="gray" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
 </defs><rect width="1200" height="100%" fill="#ffffff"/>
-<text x="36" y="50" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Relay control: switching the SSR’s DC input</text>
+<text x="36" y="50" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">Orange Pi relay: switching the SSR’s DC input</text>
 <text x="36" y="86" font-size="21" fill="#52635b" font-weight="400" text-anchor="start">Supplied reference: 3–32 VDC input, up to 40 mA · verify the exact unit label.</text>
 <rect x="30" y="111" width="1140" height="65" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
 <text x="51" y="151" font-size="21" fill="#25362f" font-weight="400" text-anchor="start">For a verified DC on/off SSR input only. Use a compatible 3.3 V relay interface.</text>

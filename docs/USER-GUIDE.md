@@ -156,9 +156,9 @@ time can contain many off periods.
 Accounting follows actual controller-output on-time, including a pulse in
 progress, and preserves totals across eligible recovery. This is a rated-power
 estimate, not a mains meter. Heater percentage is the final commanded duty,
-including any ramp correction, not confirmation that relay contacts or elements
-are on. Partial totals and earlier values reconstructed from logs are labeled
-explicitly.
+including any ramp correction, not confirmation that the output hardware or
+heating elements are energized. Partial totals and earlier values reconstructed
+from logs are labeled explicitly.
 
 ## Firing history
 

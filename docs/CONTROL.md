@@ -13,8 +13,9 @@ heating, and supports over-temperature and sensor-fault shutdown. Keep fault
 overrides disabled for normal operation. MAX31856's configurable 50 Hz filter
 does not apply to MAX31855.
 
-Match the converter, probe and wiring to the [hardware guide](HARDWARE.md).
-MAX31855 requires an ungrounded, electrically insulated probe. Sensor ratings,
+Match the converter, probe and wiring to the [build guide for your board](GETTING-STARTED.md).
+MAX31855 requires an ungrounded, electrically insulated probe; the current
+Raspberry Pi build specifies a ceramic-sheathed K-type kiln probe. Sensor ratings,
 calibration and electrical isolation still need to be checked on the real build.
 
 The controller has one heat request. It does not independently control three
@@ -46,9 +47,11 @@ window**. Zero uses the PID window for both, preserving the earlier behavior.
 Set a positive catch-up tolerance when tuning so that widening the PID window
 does not also loosen temperature waits during ramps or holds.
 
-Tune gains for the kiln and its relay period. Shortening a mechanical relay's
-cycle is not a substitute for tuning. The [recorded ramp-tuning example from
-5 October 2026](ramp-tuning-20261005.md) and its
+Tune gains for the kiln and its control cycle. The Pi build's MOSFET switches
+timed on/off requests to the AC SSR; its PWM label does not call for fast PWM.
+The recorded Orange Pi mechanical relay uses a 30-second cycle to reduce wear.
+Shortening the cycle is not a substitute for tuning. The
+[recorded ramp-tuning example from 5 October 2026](ramp-tuning-20261005.md) and its
 [high-temperature follow-up](high-temperature-smoothing-20261005.md) describe
 one installation. The latter covers gentler gains and retaining a recent
 integral bias across a brief, healthy recovery to reduce cycling and restart
@@ -61,7 +64,7 @@ active segment once a minute and applies bounded heater-power corrections.
 The **Ramp tracking** panel shows the requested and measured rates, applied
 adjustment and any limiting condition.
 
-The correction preserves temperature waits, holds, relay timing and the original
+The correction preserves temperature waits, holds, output timing and the original
 planned graph. Read [automatic ramp control](automatic-ramp-control.md) for
 measurement timing, limits and diagnostics. Historical heating-capacity
 measurements are a separate feature: they guide program editing without
@@ -84,7 +87,7 @@ corrupt and mismatched records do not automatically resume.
 
 Enable recovery only when you intend automatic resumption, using the maximum
 delay and clock settings appropriate to the installation. See the
-[installation guide](INSTALL.md) for commissioning and clock checks.
+[matching build guide](GETTING-STARTED.md) for commissioning and clock checks.
 
 ### Stop, pause and restart are different actions
 
@@ -100,7 +103,8 @@ The service and controller attempt to switch the heat request off on exit.
 An uncaught controller-thread fault also stops output. These actions cannot
 prove that mains power is absent or substitute for electrical isolation.
 Verify output-off behavior at boot, shutdown and controller power loss with
-kiln mains isolated, including when a separate driver supply remains powered.
+kiln mains isolated, including while the driver's supply remains powered.
+The Pi's 5 V header can remain live after operating-system shutdown.
 
 ## Simulation
 

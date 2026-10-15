@@ -17,6 +17,13 @@ For a build that follows existing deployment evidence, use the
 validate a new hardware combination; Raspberry Pi 4 is the first proposed
 beginner-build validation target.
 
+The Pi guide specifies a MAX31855 and a ceramic-sheathed, ungrounded K-type
+thermocouple rated for the kiln, plus an active-high, low-side MOSFET trigger
+switch module with a 3.3 V-compatible trigger, nominal 5 V supply and 10 kΩ
+trigger pull-down. The module switches the SSR's DC control input; the SSR
+switches kiln power. The recorded Orange Pi deployment retains its active-low
+mechanical relay interface. Each route needs its own wiring and polarity checks.
+
 | Board | Status in this fork | What that means |
 | --- | --- | --- |
 | **Orange Pi Zero 2W** | **Documented deployment** | Debian 12, Python 3.11, Blinka 9.2.0; the `orange-pi-zero-2w` profile preserves the recorded H616-compatible mapping. See the [installation guide](INSTALL.md) and [deployment record](ORANGE-PI-SETUP.md). |
@@ -37,7 +44,7 @@ beginner-build validation target.
 | NVIDIA Jetson, Google Coral and other Linux or industrial boards | Unverified port candidates | No maintained installation route or physical validation in this fork. |
 
 “Software route added” means the repository has code and instructions for the
-route. It does not mean GPIO timing, sensor readings, relay polarity or kiln
+route. It does not mean GPIO timing, sensor readings, output polarity or kiln
 operation have been tested on that hardware. The exact model accepted by a
 profile is defined in [the hardware-profile code](../lib/board_profiles.py).
 Real Raspberry Pi operation currently accepts only Pi 3 Model A+/B/B+ and Pi 4
@@ -229,5 +236,5 @@ independent-protection requirements.
 
 The maintainer can then add the demonstrated combination to the table, with a
 date and linked evidence. This does not automatically validate a different OS,
-board revision, relay module or sensor. See [Adding a board profile](DEVELOPMENT.md#adding-a-board-profile)
+board revision, output interface or sensor. See [Adding a board profile](DEVELOPMENT.md#adding-a-board-profile)
 for the code and documentation that a new port needs.
