@@ -76,14 +76,15 @@ label alone does not mean it can be driven directly from GPIO.
 Follow the [getting-started guide](docs/GETTING-STARTED.md) for the full sequence.
 Each board guide keeps the wiring, software profile and commands together.
 
-[![Generated illustration of Raspberry Pi and sensor mounted in an open low-voltage enclosure before wiring](docs/images/hardware/raspberry-pi-assembly-generated.jpg)](docs/builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
+[![Generated connection overview showing Raspberry Pi, sensor, relay driver, SSR on a heatsink and separate 5 V control supply](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)](docs/images/hardware/raspberry-pi-wired-assembly-generated.jpg)
 
-*Generated assembly illustration: arrange and secure the parts before wiring.
-The empty mounting area is for your chosen output interface. Follow the
-[Pi guide's pin tables and wiring diagram](docs/builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
-for connections.*
+*Generated assembly with a wiring overlay. The relay switches the SSR's
+low-voltage control input; the SSR's AC load terminals are shown unwired.
+Use the [Pi guide's pin and connection tables](docs/builds/raspberry-pi.md#heat-request-output)
+for electrical connections and the chosen relay's schematic for its power pins.*
 
-**1** Raspberry Pi · **2** Sensor converter · **3** Space for the output interface.
+**1** Raspberry Pi · **2** MAX31855 · **3** Relay/driver ·
+**4** SSR and heatsink · **5** Regulated 5 V SSR-control supply.
 
 1. **Prepare the SD card and network.** Flash the recommended OS, create your
    account, connect the board and find its address. **Check:** you can log in.

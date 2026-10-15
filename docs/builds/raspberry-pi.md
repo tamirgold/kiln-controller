@@ -179,11 +179,34 @@ The output must go through a verified compatible interface. Do not connect the
 documented up-to-40 mA SSR input directly to GPIO. The [parts guide](../PARTS.md#choose-the-output-interface-deliberately)
 explains what to establish before buying a driver.
 
-The [Orange Pi relay example](../HARDWARE.md#4-connect-the-relay-and-ssr-input)
-explains an active-low relay switching a separate 5 V SSR input supply. For a Pi
-build, use **BCM26 / physical 37**, and independently verify that exact module's
-power/logic requirements. Its Orange Pi pin names are not Pi pin names. A
-different module can need different polarity, supplies and OFF biasing.
+For a **3.3 V-compatible active-low relay** matching the
+[documented example](../HARDWARE.md#4-connect-the-relay-and-ssr-input), connect
+**physical 37 / BCM26 to IN1** and **physical 39 to relay input logic GND**.
+HIGH means no heat request; LOW requests heat. Its dry contacts switch a
+separate regulated 5 V supply into the **3–32 VDC SSR control input**:
+
+[![Generated conceptual Raspberry Pi, sensor, relay and SSR low-voltage assembly](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
+
+*Generated assembly with a wiring overlay. Use the pin and connection tables as the
+electrical reference; actual module layouts vary. The SSR's AC load terminals
+are shown unwired.*
+
+**1** Raspberry Pi · **2** MAX31855 · **3** Relay/driver ·
+**4** SSR and heatsink · **5** Regulated 5 V SSR-control supply.
+
+| From | To |
+| --- | --- |
+| Pi physical 17 / 3.3 V, through an optional 10 kΩ pull-up if required by the module | Relay IN1 |
+| Separate regulated control supply +5 V | Relay COM |
+| Relay NO (normally open) | SSR DC control input + |
+| Control supply 0 V | SSR DC control input − |
+| Relay NC (normally closed) | Leave unused |
+
+Power the relay's logic and coil according to its **exact module schematic**;
+VCC/JD-VCC connections and jumper positions are module-specific. The SSR-control
+supply's 0 V stays separate from Pi logic GND in this dry-contact example.
+The optional pull-up biases IN1 off only while the Pi's 3.3 V rail exists.
+Relay contacts carry the SSR's low-voltage control current, not kiln mains.
 
 Mount the finished low-voltage assembly securely, with labeled cables, strain
 relief and separation from power wiring. Do not treat loose bench jumper wires
