@@ -28,7 +28,7 @@ You need the [listed parts and tools](../PARTS.md), a computer with an SD reader
 and access to the same local network as the Pi. Start with the board, SD card and
 board power supply only; leave the driver and kiln power disconnected.
 
-[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](../images/hardware/raspberry-pi-parts-generated.png)](../images/hardware/raspberry-pi-parts-generated.png)
+[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](../images/hardware/raspberry-pi-parts-generated.jpg)](../images/hardware/raspberry-pi-parts-generated.jpg)
 
 *Generated illustration of the board-preparation and sensor parts. Component
 appearance varies; use the parts table and your module's markings. The output
@@ -121,7 +121,7 @@ the Pi as an Orange Pi. GPIO imports use the real board identity.
 
 Disconnect all controller power before assembly or wiring.
 
-[![Generated illustration of Raspberry Pi and sensor mounting before wiring](../images/hardware/raspberry-pi-assembly-generated.png)](../images/hardware/raspberry-pi-assembly-generated.png)
+[![Generated illustration of Raspberry Pi and sensor mounting before wiring](../images/hardware/raspberry-pi-assembly-generated.jpg)](../images/hardware/raspberry-pi-assembly-generated.jpg)
 
 *Generated assembly illustration: arrange and secure the low-voltage parts
 before wiring. The output-interface space is left open because its exact module

@@ -9,7 +9,7 @@ profile still needs a physical build report. Prices and availability vary.
 
 ## Low-voltage controller
 
-[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](images/hardware/raspberry-pi-parts-generated.png)](images/hardware/raspberry-pi-parts-generated.png)
+[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](images/hardware/raspberry-pi-parts-generated.jpg)](images/hardware/raspberry-pi-parts-generated.jpg)
 
 *Generated illustration of the board-preparation and sensor parts. Component
 appearance varies; use the parts table and your module's markings. The output

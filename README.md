@@ -76,7 +76,7 @@ label alone does not mean it can be driven directly from GPIO.
 Follow the [getting-started guide](docs/GETTING-STARTED.md) for the full sequence.
 Each board guide keeps the wiring, software profile and commands together.
 
-[![Generated illustration of Raspberry Pi and sensor mounted in an open low-voltage enclosure before wiring](docs/images/hardware/raspberry-pi-assembly-generated.png)](docs/builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
+[![Generated illustration of Raspberry Pi and sensor mounted in an open low-voltage enclosure before wiring](docs/images/hardware/raspberry-pi-assembly-generated.jpg)](docs/builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
 
 *Generated assembly illustration: arrange and secure the parts before wiring.
 The empty mounting area is for your chosen output interface. Follow the

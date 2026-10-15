@@ -6,10 +6,11 @@ illustrations for component recognition and arranging parts before wiring.
 They are not photographs of a completed or tested Raspberry Pi build.
 
 Numbered markers were added locally after generation to match the Markdown
-legends. The underlying generated originals are retained in the workspace output.
+legends. The published images are JPEG web copies (quality 92); the generated
+and annotated PNG originals are retained in the workspace output.
 
-- [Parts layout](raspberry-pi-parts-generated.png)
-- [Assembly layout](raspberry-pi-assembly-generated.png)
+- [Parts layout](raspberry-pi-parts-generated.jpg)
+- [Assembly layout](raspberry-pi-assembly-generated.jpg)
 
 Use the [build guide's pin tables and schematic](../../builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
 for electrical connections. Component appearance and wire colors in generated
@@ -17,11 +18,11 @@ images are not a purchasing specification or polarity reference.
 
 ## Generation prompts
 
-### 1. raspberry-pi-parts-generated.png
+### 1. raspberry-pi-parts-generated.jpg
 
 Use case: product-mockup. Asset type: photographic-style educational parts layout for a beginner GitHub build guide. Primary request: a clear top-down arrangement of the low-voltage parts for preparing a Raspberry Pi 4-based kiln controller on a light neutral workbench. Subject: one Raspberry Pi 4 Model B with a 40-pin header and recognisable USB-C, two micro-HDMI, four USB and Ethernet connectors; one microSD card with USB card reader; one matching USB-C power supply; one MAX31855 thermocouple breakout with a two-screw thermocouple terminal; one metal-sheathed K-type thermocouple with cable; a small bundle of female jumper leads; four mounting standoffs. All parts separate and unpowered. Style: realistic product-photography illustration with clear component shapes, soft daylight and restrained shadows. Enough separation to identify every part at phone size. Landscape overhead composition, grouped components, uncluttered, generous margins. Constraints: no connected wires, no kiln, no mains wiring, no SSR, no output-driver part, no invented pin labels, no logos or certification marks. Do not imply this is a complete shopping kit. No text inside the generated image; labels and generated-image disclosure will be ordinary Markdown beside it. Accurate and consistent component scale.
 
-### 2. raspberry-pi-assembly-generated.png
+### 2. raspberry-pi-assembly-generated.jpg
 
 Use case: product-mockup. Asset type: photographic-style assembly orientation image for a beginner GitHub build guide. Primary request: show how to arrange the low-voltage controller parts on a mounting plate before connecting wires. Subject: one Raspberry Pi 4 Model B secured to insulated standoffs, a separate MAX31855 sensor breakout also mounted on standoffs, a thermocouple cable entering through a strain-relief gland beside the converter, and an open empty mounting area reserved for an output interface chosen from its datasheet. A tidy open low-voltage enclosure surrounds the plate; its lid lies beside it. The Pi's USB, Ethernet and power sockets face accessible enclosure cable-entry space; the 40-pin header is clear. Component headers and screw terminals remain visible and unconnected. The thermocouple cable's loose ends rest near the sensor terminals without connecting. Power supply disconnected and out of frame. Style: realistic product-photography illustration, three-quarter overhead view, clear proportions, soft light, neutral background, practical maker workspace. Landscape with generous negative space around components; mounting points and cable entry visible. Constraints: no electrical wire connections, no heater or mains circuitry, no powered indicator lights, no output-driver design, no pin-number annotations or fabricated product marks. Do not represent a completed or tested controller. No text inside the generated image; concise labels and generated-image disclosure belong in the guide. Correct Raspberry Pi 4 layout: 40-pin header, two micro-HDMI connectors, one USB-C, four USB sockets and Ethernet.
 
