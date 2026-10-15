@@ -1,0 +1,2 @@
+-r requirements-hardware.txt
+RPi.GPIO==0.7.1

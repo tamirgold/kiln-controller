@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+<title id="title">The build, at a glance — conceptual system schematic</title>
+<desc id="desc">A K-type thermocouple feeds a MAX31855 sensor module, which sends temperature to a Raspberry Pi or Orange Pi. The small computer communicates with a phone or laptop over the local network and sends a 3.3 volt heat request to a compatible driver. The driver operates the SSR control input. In the separate electrician-designed mains circuit, isolation and protection feed a safety contactor, an AC SSR power stage, and the kiln heaters. A separate high-limit controller with its own probe can stop heater power through the contactor independently of the Pi. This is a conceptual schematic; physical wiring and safety shutdown must be verified before heating.</desc>
+<defs><style>text{font-family:Arial,Helvetica,sans-serif}</style>
+<marker id="signal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#1c7c89"/></marker>
+<marker id="heat" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#bd5229"/></marker>
+<marker id="power" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7654a6"/></marker>
+<marker id="ground" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 Z" fill="#7b8982"/></marker>
+</defs>
+<rect width="1200" height="800" fill="#ffffff"/>
+<text x="36" y="51" font-size="32" fill="#173f35" font-weight="700" text-anchor="start">The build, at a glance</text>
+<text x="36" y="85" font-size="21" fill="#52635b" font-weight="400" text-anchor="start">The computer reads temperature and asks the power stage for heat.</text>
+<rect x="559" y="112" width="286" height="69" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="702" y="141" font-size="22" fill="#173f35" font-weight="700" text-anchor="middle">Phone or laptop</text>
+<text x="702" y="165" font-size="18" fill="#52635b" font-weight="400" text-anchor="middle">Web browser · local network</text>
+<rect x="28" y="208" width="1144" height="208" rx="14" fill="#f2f8f6" stroke="#c5d9d0" stroke-width="2"/>
+<text x="50" y="243" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">MAKER WORK · low-voltage sensing and control</text>
+<path d="M 702 187 L 702 266" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)" marker-start="url(#signal)" stroke-dasharray="7 6"/>
+<rect x="50" y="275" width="217" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="158.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">K-type probe</text>
+<text x="158.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Measures temperature</text>
+<rect x="309" y="275" width="219" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="418.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">MAX31855</text>
+<text x="418.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Sensor module</text>
+<rect x="570" y="275" width="263" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="701.5" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Raspberry Pi / Orange Pi</text>
+<text x="701.5" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">Runs kiln-controller</text>
+<rect x="875" y="275" width="274" height="104" rx="14" fill="white" stroke="#c5d9d0" stroke-width="2"/>
+<text x="1012.0" y="316" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Compatible driver</text>
+<text x="1012.0" y="349" font-size="19" fill="#52635b" font-weight="400" text-anchor="middle">3.3 V GPIO input</text>
+<path d="M 270 327 L 304 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
+<path d="M 531 327 L 565 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
+<path d="M 836 327 L 870 327" fill="none" stroke="#1c7c89" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#signal)"/>
+<text x="50" y="403" font-size="19" fill="#52635b" font-weight="400" text-anchor="start">Use suitable low-voltage supplies. GPIO never powers the heater or drives the SSR input directly.</text>
+<path d="M 1012 380 L 1012 466 L 682 466 L 682 605" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<text x="50" y="456" font-size="22" fill="#173f35" font-weight="700" text-anchor="start">Two connected jobs. One independent safety system.</text>
+<text x="834" y="446" font-size="18" fill="#bd5229" font-weight="400" text-anchor="middle">Low-voltage heat request</text>
+<rect x="28" y="493" width="1144" height="241" rx="14" fill="#fff7ed" stroke="#eed0a9" stroke-width="2"/>
+<text x="50" y="527" font-size="22" fill="#bd5229" font-weight="700" text-anchor="start">ELECTRICIAN WORK · kiln power + independent protection</text>
+<path d="M 682 495 L 682 605" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<rect x="294" y="543" width="245" height="50" rx="10" fill="white" stroke="#eed0a9" stroke-width="2"/>
+<text x="416.5" y="563" font-size="19" fill="#bd5229" font-weight="700" text-anchor="middle">Independent high limit</text>
+<text x="416.5" y="583" font-size="16" fill="#52635b" font-weight="400" text-anchor="middle">Own probe · hardwired</text>
+<path d="M 416.5 594 L 416.5 608" fill="none" stroke="#bd5229" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<rect x="50" y="615" width="210" height="84" rx="14" fill="white" stroke="#eed0a9" stroke-width="2"/>
+<text x="155.0" y="649" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Isolation +</text>
+<text x="155.0" y="678" font-size="18" fill="#52635b" font-weight="400" text-anchor="middle">protection</text>
+<rect x="296" y="615" width="242" height="84" rx="14" fill="white" stroke="#eed0a9" stroke-width="2"/>
+<text x="417.0" y="649" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Safety contactor</text>
+<text x="417.0" y="678" font-size="18" fill="#52635b" font-weight="400" text-anchor="middle">Removes heater power</text>
+<rect x="579" y="615" width="207" height="84" rx="14" fill="white" stroke="#eed0a9" stroke-width="2"/>
+<text x="682.5" y="649" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">AC SSR stage</text>
+<text x="682.5" y="678" font-size="18" fill="#52635b" font-weight="400" text-anchor="middle">Switches heat</text>
+<rect x="827" y="615" width="322" height="84" rx="14" fill="white" stroke="#eed0a9" stroke-width="2"/>
+<text x="988.0" y="649" font-size="21" fill="#173f35" font-weight="700" text-anchor="middle">Kiln heaters</text>
+<text x="988.0" y="678" font-size="18" fill="#52635b" font-weight="400" text-anchor="middle">Correctly rated + earthed</text>
+<path d="M 263 657 L 291 657" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<path d="M 541 657 L 574 657" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<path d="M 789 657 L 822 657" fill="none" stroke="#bd5229" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#heat)"/>
+<text x="50" y="722" font-size="19" fill="#bd5229" font-weight="400" text-anchor="start">The limiter must disconnect heater power without the Pi. Software Stop is not electrical isolation.</text>
+<text x="36" y="772" font-size="20" fill="#52635b" font-weight="400" text-anchor="start">Conceptual schematic. Verify physical wiring and the independent shutdown before enabling heat.</text>
+</svg>

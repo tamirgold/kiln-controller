@@ -9,8 +9,10 @@ import socket
 from pathlib import Path
 import tempfile
 import time
+from lib.board_profiles import (BoardConfigurationError, PIN_KEYS, get_profile,
+                                namespace_profile, thermocouple_name)
 
-PIN_HEADER={'PI8':3,'PI7':5,'PI13':7,'PH2':11,'PI1':12,'PH3':13,'PI5':15,'PI14':16,'PH4':18,'PH7':19,'PH8':21,'PI6':22,'PH6':23,'PH5':24,'PH9':26,'PI10':27,'PI9':28,'PI0':29,'PI15':31,'PI11':32,'PI12':33,'PI2':35,'PC12':36,'PI16':37,'PI4':38,'PI3':40}
+PIN_HEADER=get_profile().header
 GROUPS=[('general','Electricity & display'),('firing','Firing behavior'),('pid','PID control'),('sensor','Sensor & wiring'),('recovery','Power-loss recovery'),('protection','Protection overrides'),('system','Server & storage'),('simulation','Simulation'),('legacy','Compatibility')]
 SCHEMA=[]
 def field(key,label,group,kind='number',help='',minimum=None,maximum=None,options=None,readonly=None):
@@ -45,7 +47,7 @@ field('max31856','Use MAX31856','sensor','boolean',help='Requires a MAX31856 boa
 field('thermocouple_type','Thermocouple type','sensor','select',help='MAX31856 types; keep K when using MAX31855.',options={v:'Type '+v for v in ['B','E','J','K','N','R','S','T']})
 field('ac_freq_50hz','50 Hz noise filtering','sensor','boolean',help='MAX31856 only: enable for 50 Hz mains (Israel). MAX31855 has no configurable mains filter.')
 for k,label in [('spi_sclk','Thermocouple clock (CLK)'),('spi_miso','Thermocouple data out (DO / MISO)'),('spi_mosi','Thermocouple data in (MOSI)'),('spi_cs','Thermocouple chip select (CS)'),('gpio_heat','SSR control output')]:
-    field(k,label,'sensor','select',help='Orange Pi 40-pin header. Wiring must match. Leave MOSI physically unconnected with MAX31855.',options={k:f'Pin {p} · {k}' for k,p in sorted(PIN_HEADER.items(),key=lambda x:x[1])})
+    field(k,label,'sensor','select',help='Wiring must match the selected board profile. Leave MOSI physically unconnected with MAX31855.',options=get_profile().options())
 field('gpio_heat_invert','Invert SSR control signal','sensor','boolean',help='Enable only for an active-low driver. An incorrect polarity can turn the heater on when it should be off.')
 field('automatic_restarts','Automatic recovery after power loss','recovery','boolean')
 field('automatic_restart_window','Maximum recovery delay (minutes)','recovery',help='Resume only when the saved firing state is younger than this.',minimum=.1,maximum=1440)
@@ -74,22 +76,25 @@ DELTA_TEMP=['thermocouple_offset','pid_control_window','catch_up_tolerance']
 class SettingsError(ValueError):
     def __init__(self,message,errors=None):super().__init__(message);self.errors=errors or {}
 
-def pin_module():
-    from adafruit_blinka.microcontroller.allwinner.h616 import pin
-    return pin
+def schema_for(profile):
+    fields=copy.deepcopy(SCHEMA)
+    for f in fields:
+        if f['key'] in PIN_KEYS:
+            f['options']=profile.options()
+            f['help']=profile.label+' header. Wiring must match. Leave MOSI physically unconnected with MAX31855.'
+    return fields
 
 def serialize(namespace,root):
     result={}
-    pins=None
+    profile=namespace_profile(namespace)
     for f in SCHEMA:
         k=f['key'];v=namespace[k]
-        if k in ('spi_sclk','spi_mosi','spi_miso','spi_cs','gpio_heat'):
-            pins=pins or pin_module()
-            v=next((name for name in PIN_HEADER if getattr(pins,name).id==v.id),None)
-            if v is None:raise SettingsError('Unrecognized GPIO assignment: '+k)
+        if k in PIN_KEYS:
+            try:v=profile.canonical_pin(v)
+            except BoardConfigurationError as e:raise SettingsError(str(e),{k:'Choose a pin from the selected board profile.'}) from e
         elif k=='thermocouple_type':
-            import adafruit_max31856
-            v=next(name for name in INDEX[k]['options'] if getattr(adafruit_max31856.ThermocoupleType,name)==v)
+            try:v=thermocouple_name(v)
+            except BoardConfigurationError as e:raise SettingsError(str(e),{k:'Choose a thermocouple type.'}) from e
         elif k=='log_level':v=logging.getLevelName(v)
         elif f['type']=='boolean':v=bool(v)
         elif f['type']=='path':
@@ -111,12 +116,18 @@ def contained_path(root,value,key):
     if key=='automatic_restart_state_file' and resolved.suffix!='.json':raise SettingsError('State files must end in .json.',{key:'Use a .json file.'})
     return resolved
 
-def validate(values,base,root,environment=None):
+def validate(values,base,root,environment=None,profile=None):
     if not isinstance(values,dict):raise SettingsError('Settings must be an object.')
     unknown=set(values)-set(INDEX)
     if unknown:raise SettingsError('Unknown settings: '+', '.join(sorted(unknown)))
     result=copy.deepcopy(base);result.update(values);errors={};environment=environment or {}
-    for k,f in INDEX.items():
+    profile=profile or get_profile()
+    for k in PIN_KEYS:
+        if k in result:
+            try:result[k]=profile.canonical_pin(result[k])
+            except BoardConfigurationError:errors[k]='Choose a pin from the '+profile.label+' profile.'
+    for f in schema_for(profile):
+        k=f['key']
         v=result.get(k);kind=f['type']
         if k not in result:errors[k]='Missing value.';continue
         locked=f.get('readonly') or (k in ENV_KEYS and ENV_KEYS[k] in environment)
@@ -127,7 +138,7 @@ def validate(values,base,root,environment=None):
             elif kind=='integer' and int(v)!=v:errors[k]='Enter a whole number.'
             elif ('min'in f and v<f['min']) or ('max'in f and v>f['max']):errors[k]=f"Use a value from {f.get('min')} to {f.get('max')}."
             elif kind=='integer':result[k]=int(v)
-        elif kind=='select' and (not isinstance(v,str) or v not in f['options']):errors[k]='Choose one of the listed values.'
+        elif kind=='select' and (not isinstance(v,str) or v not in f['options']):errors.setdefault(k,'Choose one of the listed values.')
         elif kind in ('string','path'):
             if not isinstance(v,str) or not v.strip() or any(ord(c)<32 for c in v):errors[k]='Enter text without control characters.'
             elif len(v)>(8 if k=='currency_type' else 250):errors[k]='Value is too long.'
@@ -173,6 +184,7 @@ def paths(root):
 
 def load_overrides(namespace):
     root=Path(namespace['__file__']).resolve().parent
+    profile=namespace_profile(namespace)
     base=serialize(namespace,root)
     namespace['_settings_base_values']=base
     active,_=paths(root)
@@ -182,19 +194,19 @@ def load_overrides(namespace):
     values=dict(document['values'])
     for key,env in ENV_KEYS.items():
         if env in os.environ:values[key]=base[key]
-    values=validate(values,base,root,os.environ)
+    try:values=validate(values,base,root,os.environ,profile)
+    except SettingsError as e:
+        detail='; '.join(f'{key}: {message}' for key,message in e.errors.items()) or str(e)
+        raise SettingsError(f'Cannot load settings from {active}: {detail}',e.errors) from e
     for k,v in values.items():
-        if k in ('spi_sclk','spi_mosi','spi_miso','spi_cs','gpio_heat'):v=getattr(pin_module(),v)
-        elif k=='thermocouple_type':
-            import adafruit_max31856
-            v=getattr(adafruit_max31856.ThermocoupleType,v)
-        elif k=='log_level':v=getattr(logging,v)
+        if k=='log_level':v=getattr(logging,v)
         elif INDEX[k]['type']=='path':v=str((root/v).resolve())
         namespace[k]=v
 
 class Store:
     def __init__(self,config):
         self.config=config;self.root=Path(config.__file__).resolve().parent
+        self.profile=namespace_profile(vars(config))
         self.active,self.pending=paths(self.root)
         self.current=serialize(vars(config),self.root)
     def revision(self):
@@ -210,7 +222,7 @@ class Store:
                 values['catch_up_tolerance']*=1.8 if values['temp_scale']=='f' else 1/1.8
         return values
     def schema(self):
-        fields=copy.deepcopy(SCHEMA)
+        fields=schema_for(self.profile)
         for f in fields:
             if f['key'] in ENV_KEYS and ENV_KEYS[f['key']] in os.environ:f['readonly']='Set by service environment: '+ENV_KEYS[f['key']]
         return fields
@@ -218,7 +230,7 @@ class Store:
         if revision!=self.revision():raise SettingsError('Settings changed in another session. Reload before saving.',{'_conflict':True})
     def save(self,values,revision):
         self.check_revision(revision)
-        validated=validate(values,self.current,self.root,os.environ)
+        validated=validate(values,self.current,self.root,os.environ,self.profile)
         if validated==self.current:
             if self.pending.exists():self.pending.unlink()
         else:atomic_json(self.pending,dict(version=1,values=validated,saved_at=time.time()))
@@ -228,7 +240,7 @@ class Store:
     def apply(self,revision):
         self.check_revision(revision)
         if not self.pending.exists():raise SettingsError('There are no saved changes to apply.')
-        values=validate(self.desired(),self.current,self.root,os.environ)
+        values=validate(self.desired(),self.current,self.root,os.environ,self.profile)
         if values['listening_port']!=self.current['listening_port']:
             try:
                 with socket.socket() as sock:sock.bind(('0.0.0.0',values['listening_port']))

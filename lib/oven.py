@@ -5,14 +5,17 @@ import logging
 import json
 import config
 import os
-import digitalio
-import busio
-import adafruit_bitbangio as bitbangio
 import statistics
 import math
 import tempfile
 import subprocess
 from lib.ramp_control import RampController
+from lib.hardware import DigitalIO
+from lib.board_profiles import thermocouple_name
+
+# Import GPIO only when an actual output is created in real hardware mode.
+# Keep this adapter explicit so output accounting can be tested with a fake.
+digitalio = DigitalIO(config)
 
 log = logging.getLogger(__name__)
 
@@ -96,6 +99,8 @@ class RealBoard(Board):
         Board.__init__(self) 
 
     def load_libs(self):
+        if config.simulate:
+            raise RuntimeError('RealBoard is unavailable in simulation mode.')
         import board
         self.name = board.board_id
 
@@ -139,6 +144,8 @@ class TempSensorReal(TempSensor):
            config.temperature_average_samples 
     '''
     def __init__(self):
+        if config.simulate:
+            raise RuntimeError('Real thermocouples are unavailable in simulation mode.')
         TempSensor.__init__(self)
         self.sleeptime = self.time_step / float(config.temperature_average_samples)
         self.temptracker = TempTracker() 
@@ -151,6 +158,7 @@ class TempSensorReal(TempSensor):
         if(hasattr(config,'spi_sclk') and
            hasattr(config,'spi_mosi') and
            hasattr(config,'spi_miso')):
+            import adafruit_bitbangio as bitbangio
             self.spi = bitbangio.SPI(config.spi_sclk, config.spi_mosi, config.spi_miso)
             log.info("Software SPI selected for reading thermocouple")
         else:
@@ -348,7 +356,8 @@ class Max31856(TempSensorReal):
         log.info("thermocouple MAX31856")
         import adafruit_max31856
         self.thermocouple = adafruit_max31856.MAX31856(self.spi,self.cs,
-                                        thermocouple_type=config.thermocouple_type)
+                                        thermocouple_type=getattr(adafruit_max31856.ThermocoupleType,
+                                                                  thermocouple_name(config.thermocouple_type)))
         if (config.ac_freq_50hz == True):
             self.thermocouple.noise_rejection = 50
         else:

@@ -85,6 +85,7 @@ function status(d){
  renderLive();connection();queueDraw();loadFiringHistory();
 }
 function renderConfig(){
+ renderHardware();
  document.querySelectorAll('.temp-unit').forEach(e=>{e.textContent=unit();});$('editor_temp_heading').textContent='Target '+unit();
  $('editor_time_heading').textContent=timeWord(S.config.time_scale_profile)+' from start';$('editor_time_help').textContent='Set cumulative time in '+timeWord(S.config.time_scale_profile)+'. Equal temperatures create a hold.';$('editor_rate_heading').textContent='Rate / '+(S.config.time_scale_slope||'h');
  $('rated_power').textContent=num(S.config.kw_elements,1)+' kW';
@@ -92,12 +93,19 @@ function renderConfig(){
  $('recovery').textContent=S.config.automatic_restarts===false?'Manual restart':finite(S.config.automatic_restart_window)?'Within '+S.config.automatic_restart_window+' minutes':'—';
  $('limit').textContent=num(S.config.emergency_shutoff_temp,0)+unit();
 }
+function renderHardware(){
+ const simulated=S.live?S.live.simulate===true:S.config.simulate===true;
+ const converter=S.config.thermocouple_converter;
+ $('controller_board').textContent=simulated?'Simulated kiln':S.config.board_label||'Kiln controller';
+ $('controller_sensor').textContent=simulated?'Virtual thermocouple':converter||'Thermocouple';
+ $('sensor_caption').textContent=simulated?'SIMULATED':converter||'THERMOCOUPLE';
+}
 function renderLive(){
  const d=S.live;if(!d)return;$('history_notice').hidden=!d.history_error;$('history_notice').textContent=d.history_error||'';const running=active(d),ready=d.sensor_ready!==false,delta=d.temperature-d.target;
  renderCost();
  $('temperature').textContent=ready?num(d.temperature):'—';$('target').textContent=running?num(d.target):'—';
  $('sensor_notice').hidden=ready;$('simulation_notice').hidden=!d.simulate;$('sensor_dot').classList.toggle('ready',ready);
- $('sensor_status').textContent=ready?'Connected':'Not ready';$('sensor_caption').textContent=d.simulate?'SIMULATED':'MAX31855';
+ $('sensor_status').textContent=ready?(d.simulate?'Simulated':'Connected'):'Not ready';renderHardware();
  $('temperature_delta').textContent=!ready?'Sensor needs attention':!running?'Monitoring temperature':Math.abs(delta)<.1?'At target temperature':num(Math.abs(delta))+unit()+(delta<0?' below target':' above target');
  $('state_badge').textContent=d.state==='PAUSED'?'Paused · holding':d.catching_up&&running?'Catching up':running?'Firing in progress':'Ready';
  $('state_badge').className='state-pill'+(running?d.catching_up||d.state==='PAUSED'?' waiting':' running':'');

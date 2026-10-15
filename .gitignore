@@ -31,3 +31,6 @@ htmlcov/
 /storage/settings-backups/
 /storage/firings/
 /storage/simulated-firings/
+/storage/preview/
+/storage/installation/
+/kiln-controller.service

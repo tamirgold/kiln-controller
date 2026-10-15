@@ -7,7 +7,7 @@
   <title>Kiln · Firing dashboard</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23174d41'/%3E%3Cpath d='M9 25V12a7 7 0 0 1 14 0v13H9zm4 0v-8h6v8M6 25h20' stroke='white' stroke-width='2' fill='none'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/css/dashboard.css?v=20261005-adaptive-ramp-1">
-  <script defer src="assets/js/dashboard.js?v=20261005-adaptive-ramp-1"></script>
+  <script defer src="assets/js/dashboard.js?v=20261015-hardware-profile-1"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to dashboard</a>
@@ -31,7 +31,7 @@
     <article class="metric temperature-card">
       <div class="metric-label">Kiln temperature <span class="mini-dot" id="sensor_dot"></span></div>
       <div class="metric-value"><span id="temperature">—</span><span class="unit temp-unit">°C</span></div>
-      <div class="metric-foot"><span id="temperature_delta">Waiting for sensor</span><span class="sensor-caption" id="sensor_caption">MAX31855</span></div>
+      <div class="metric-foot"><span id="temperature_delta">Waiting for sensor</span><span class="sensor-caption" id="sensor_caption">THERMOCOUPLE</span></div>
     </article>
     <article class="metric">
       <div class="metric-label">Target temperature <span class="metric-symbol" aria-hidden="true">◎</span></div>
@@ -85,7 +85,7 @@
     <div class="schedule-container" id="schedule_container" hidden><table class="schedule-table"><thead><tr><th>Point</th><th>Time from start</th><th>Target</th><th>Ramp rate</th></tr></thead><tbody id="schedule_body"></tbody></table></div>
   </section>
   <section class="system-strip" aria-label="Controller configuration"><div><span class="system-icon" aria-hidden="true">ϟ</span><span><small>INSTALLED POWER</small><strong id="rated_power">—</strong></span></div><div><span class="system-icon" aria-hidden="true">₪</span><span><small>ELECTRICITY TARIFF</small><strong id="tariff">—</strong></span></div><div><span class="system-icon" aria-hidden="true">↻</span><span><small>POWER-LOSS RECOVERY</small><strong id="recovery">—</strong></span></div><div><span class="system-icon" aria-hidden="true">⌁</span><span><small>TEMPERATURE LIMIT</small><strong id="limit">—</strong></span></div></section>
-  <footer class="page-footer"><span><span class="footer-dot"></span> Orange Pi Zero 2W <span class="footer-separator">/</span> MAX31855</span><span id="updated">Waiting for live data</span></footer>
+  <footer class="page-footer"><span><span class="footer-dot"></span> <span id="controller_board">Kiln controller</span> <span class="footer-separator">/</span> <span id="controller_sensor">Thermocouple</span></span><span id="updated">Waiting for live data</span></footer>
 </main>
 <dialog id="editor" class="editor-dialog" aria-labelledby="editor_title">
   <form id="editor_form">
