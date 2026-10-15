@@ -7,6 +7,10 @@ This walkthrough has a matching installer and pin profile, but it has not been
 commissioned on a real Pi/driver/kiln combination. Start with simulation. The
 [Orange Pi guide](../INSTALL.md) describes the existing hardware deployment.
 
+**No Raspberry Pi yet?** You can still [try the dashboard on a Linux computer or
+in Ubuntu on Windows](../GETTING-STARTED.md#try-it-before-buying-parts). Read the
+steps below to understand the eventual build before buying parts.
+
 The initial profile accepts **Pi 3 Model A+, 3 Model B, 3 Model B+, and Pi 4 Model B**
 with a 40-pin header. Pi 4B is the proposed first validation build. It does not
 accept Pi 5, Pi 400/500, Compute Modules or Zero-family boards; those need separate
@@ -25,9 +29,14 @@ and access to the same local network as the Pi. Start with the board, SD card an
 board power supply only; leave the driver and kiln power disconnected.
 
 1. Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on your
-   computer. Select your exact Pi model and the **Bookworm 64-bit Lite** OS image.
-   If Imager defaults to a newer OS, choose the Bookworm image from the official
-   OS archive rather than assuming another release has been validated here.
+   computer. Select your exact Pi model. For the **Bookworm 64-bit Lite** image
+   used by this guide, download
+   `2025-05-13-raspios-bookworm-arm64-lite.img.xz` from the
+   [official Raspberry Pi image archive](https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2025-05-13/).
+   In Imager's operating-system chooser, select **Use custom** and choose the
+   downloaded `.img.xz` file; you do not need to unpack it. This selects Debian 12
+   even if Imager's default is a newer release. The image is a setup target, not
+   a physically validated installation of this project.
 2. Select the SD card carefully: writing the image erases the selected card.
 3. Set a hostname such as **kilnpi**, create your own username/password, configure
    Wi-Fi/country if needed, and enable SSH (remote terminal access). Wired Ethernet
