@@ -100,7 +100,8 @@ def main():
                         help="confirm the hardware wiring, off level and commissioning checks were reviewed")
     args = parser.parse_args()
     if args.mode == "hardware" and not args.commissioned:
-        parser.error("hardware mode requires --commissioned after the checks in docs/INSTALL.md")
+        guide = "docs/builds/raspberry-pi.md" if args.board == "raspberry-pi" else "docs/INSTALL.md"
+        parser.error(f"hardware mode requires --commissioned after the checks in {guide}")
     try:
         content = render_service(args.directory, args.user, args.board, args.mode)
         if args.output:

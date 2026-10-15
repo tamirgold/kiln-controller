@@ -19,7 +19,7 @@ BOARD is simulation (default), raspberry-pi, or orange-pi-zero-2w.
 Run without sudo. No controller service is installed, enabled, or started.
 New settings start in simulation with automatic recovery disabled. Existing
 settings, programs, and firing records are preserved. Hardware still requires
-the wiring and commissioning checks in docs/INSTALL.md.
+the matching build guide linked from docs/GETTING-STARTED.md.
 EOF
 }
 
@@ -39,9 +39,21 @@ while (($#)); do
 done
 
 case "$kiln_board" in
-    simulation) kiln_requirements=requirements.txt ;;
-    raspberry-pi) kiln_requirements=requirements-raspberry-pi.txt ;;
-    orange-pi-zero-2w) kiln_requirements=requirements-hardware.txt ;;
+    simulation)
+        kiln_requirements=requirements.txt
+        kiln_next='bash scripts/run-simulation.sh'
+        kiln_guide=docs/GETTING-STARTED.md
+        kiln_address=http://localhost:8081/picoreflow/index.html ;;
+    raspberry-pi)
+        kiln_requirements=requirements-raspberry-pi.txt
+        kiln_next='KILN_BOARD=raspberry-pi bash scripts/run-simulation.sh'
+        kiln_guide=docs/builds/raspberry-pi.md
+        kiln_address='http://<your-board-hostname-or-IP>:8081/picoreflow/index.html' ;;
+    orange-pi-zero-2w)
+        kiln_requirements=requirements-hardware.txt
+        kiln_next='KILN_BOARD=orange-pi-zero-2w bash scripts/run-simulation.sh'
+        kiln_guide=docs/INSTALL.md
+        kiln_address='http://<your-board-hostname-or-IP>:8081/picoreflow/index.html' ;;
     *) echo "Unsupported board: $kiln_board. Use --help for choices." >&2; exit 2 ;;
 esac
 
@@ -60,7 +72,7 @@ if (( ! kiln_dry_run )); then
         exit 1
     fi
     if command -v systemctl >/dev/null && systemctl is-active --quiet kiln-controller; then
-        echo 'The controller is running. Wait until the kiln is idle, then follow docs/INSTALL.md before updating.' >&2
+        echo 'The controller is running. Wait until the kiln is idle, then follow docs/MAINTENANCE.md before updating.' >&2
         exit 1
     fi
     if [ "$kiln_board" != simulation ]; then
@@ -126,10 +138,10 @@ run venv/bin/python -m pip check
 run venv/bin/python scripts/initialize-settings.py
 
 printf '\n'
+printf 'Next: %s\n' "$kiln_next"
+printf 'Open %s\n' "$kiln_address"
+printf 'Stop the preview with Ctrl+C. Continue with %s before commissioning hardware.\n' "$kiln_guide"
 printf '%s\n' \
-    'Next: bash scripts/run-simulation.sh' \
-    'Open http://<your-board-hostname-or-IP>:8081/picoreflow/index.html' \
-    'Stop the preview with Ctrl+C. See docs/INSTALL.md before commissioning hardware.' \
     'No controller has been started or configured to start on boot.'
 if [ "$kiln_board" != simulation ]; then
     echo 'Log out and reconnect before hardware checks to activate GPIO group membership.'
