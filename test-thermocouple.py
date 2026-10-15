@@ -18,7 +18,7 @@ except NotImplementedError:
 # To test your thermocouple...
 #
 # Edit config.py and set the following in that file to match your
-# hardware setup: SPI_SCLK, SPI_MOSI, SPI_MISO, SPI_CS
+# hardware setup: spi_sclk, spi_mosi, spi_miso, spi_cs
 #
 # then run this script...
 # 
@@ -36,10 +36,10 @@ if(hasattr(config,'spi_sclk') and
     spi = bitbangio.SPI(config.spi_sclk, config.spi_mosi, config.spi_miso)
     print("Software SPI selected for reading thermocouple")
     print("SPI configured as:\n")
-    print("    config.spi_sclk = %s BCM pin" % (config.spi_sclk))
-    print("    config.spi_mosi = %s BCM pin" % (config.spi_mosi))
-    print("    config.spi_miso = %s BCM pin" % (config.spi_miso))
-    print("    config.spi_cs   = %s BCM pin\n" % (config.spi_cs))
+    print("    config.spi_sclk = %s (Blinka pin)" % (config.spi_sclk))
+    print("    config.spi_mosi = %s (Blinka pin)" % (config.spi_mosi))
+    print("    config.spi_miso = %s (Blinka pin)" % (config.spi_miso))
+    print("    config.spi_cs   = %s (Blinka pin)\n" % (config.spi_cs))
 else:
     spi = board.SPI();
     print("Hardware SPI selected for reading thermocouple")

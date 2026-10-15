@@ -1,42 +1,136 @@
 #!/usr/bin/env bash
-# Run as your normal user on an Orange Pi Zero 2W with Debian 12.
+# Install as your normal user; hardware is selected explicitly.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
-if [ "$(id -u)" -eq 0 ]; then
-    echo "Run bash setup.sh without sudo; it requests sudo when needed." >&2
-    exit 1
+usage() {
+    cat <<'EOF'
+Usage: bash setup.sh [--board BOARD] [--skip-system] [--dry-run]
+
+BOARD is simulation (default), raspberry-pi, or orange-pi-zero-2w.
+  simulation         Install the browser/controller preview without GPIO packages.
+  raspberry-pi       Raspberry Pi 3/4, Raspberry Pi OS Bookworm, 40-pin header.
+  orange-pi-zero-2w  Orange Pi Zero 2W, Debian 12, recorded working GPIO stack.
+
+--skip-system  Skip apt, groups and udev; use preinstalled OS dependencies.
+--dry-run      Print the installation steps without changing anything.
+--help         Show this help.
+
+Run without sudo. No controller service is installed, enabled, or started.
+New settings start in simulation with automatic recovery disabled. Existing
+settings, programs, and firing records are preserved. Hardware still requires
+the wiring and commissioning checks in docs/INSTALL.md.
+EOF
+}
+
+kiln_board=simulation
+kiln_skip_system=0
+kiln_dry_run=0
+while (($#)); do
+    case "$1" in
+        --board)
+            if (($# < 2)); then echo '--board needs a value.' >&2; exit 2; fi
+            kiln_board=$2; shift 2 ;;
+        --skip-system) kiln_skip_system=1; shift ;;
+        --dry-run) kiln_dry_run=1; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
+case "$kiln_board" in
+    simulation) kiln_requirements=requirements.txt ;;
+    raspberry-pi) kiln_requirements=requirements-raspberry-pi.txt ;;
+    orange-pi-zero-2w) kiln_requirements=requirements-hardware.txt ;;
+    *) echo "Unsupported board: $kiln_board. Use --help for choices." >&2; exit 2 ;;
+esac
+
+# Parse first so --help and --dry-run work without an apt-based hardware host.
+if (( ! kiln_dry_run )); then
+    if [ "$(id -u)" -eq 0 ]; then
+        echo 'Run bash setup.sh without sudo; it requests sudo when needed.' >&2
+        exit 1
+    fi
+    if [ "$(uname -s)" != Linux ]; then
+        echo 'Run setup on Linux (the Pi itself, or Linux/WSL for simulation).' >&2
+        exit 1
+    fi
+    if (( ! kiln_skip_system )) && ! command -v apt-get >/dev/null; then
+        echo 'This setup needs Debian/Raspberry Pi OS with apt-get, or --skip-system.' >&2
+        exit 1
+    fi
+    if command -v systemctl >/dev/null && systemctl is-active --quiet kiln-controller; then
+        echo 'The controller is running. Wait until the kiln is idle, then follow docs/INSTALL.md before updating.' >&2
+        exit 1
+    fi
+    if [ "$kiln_board" != simulation ]; then
+        python3 - "$kiln_board" <<'PY'
+import sys
+from lib.board_profiles import BoardConfigurationError, detected_model, get_profile
+try:
+    get_profile(sys.argv[1]).validate_model(detected_model())
+except BoardConfigurationError as error:
+    print(error, file=sys.stderr)
+    sys.exit(1)
+PY
+    fi
 fi
-if ! command -v apt-get >/dev/null; then
-    echo "This setup requires Debian with apt-get (tested target: Debian 12)." >&2
-    exit 1
+
+run() {
+    if (( kiln_dry_run )); then
+        printf '  '; printf '%q ' "$@"; printf '\n'
+    else
+        "$@"
+    fi
+}
+
+printf 'Installing for %s\n' "$kiln_board"
+if (( kiln_dry_run )); then echo '(Preview only: no changes will be made.)'; fi
+if (( ! kiln_skip_system )); then
+    kiln_packages=(git ca-certificates build-essential python3-dev python3-venv curl)
+    if [ "$kiln_board" != simulation ]; then
+        kiln_packages+=(python3-libgpiod gpiod libgpiod-dev chrony avahi-daemon)
+    fi
+    run sudo apt-get update
+    run sudo apt-get install -y "${kiln_packages[@]}"
+    if [ "$kiln_board" != simulation ]; then
+        run sudo systemctl enable --now chrony avahi-daemon
+        if ! getent group gpio >/dev/null; then run sudo groupadd --system gpio; fi
+        run sudo usermod -aG gpio "$(id -un)"
+        if (( kiln_dry_run )); then
+            echo '  Write /etc/udev/rules.d/60-kiln-gpio.rules (gpio group access to gpiochip devices)'
+        else
+            printf '%s\n' 'SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"' \
+                | sudo tee /etc/udev/rules.d/60-kiln-gpio.rules >/dev/null
+        fi
+        run sudo udevadm control --reload-rules
+        run sudo udevadm trigger --subsystem-match=gpio
+    fi
 fi
-if systemctl is-active --quiet kiln-controller; then
-    echo "The controller is running. Wait until the kiln is idle, then follow docs/INSTALL.md to stop it before setup." >&2
-    exit 1
+
+if [ "$kiln_board" = simulation ]; then
+    if [ -x venv/bin/python ]; then
+        # Recreating a hardware venv without --system-site-packages would hide
+        # its distro GPIO bindings. A preview install must preserve that flag.
+        echo '  Reusing the existing Python environment without changing its GPIO access.'
+    else
+        run python3 -m venv venv
+    fi
+else
+    # Use the distribution's libgpiod bindings, avoiding a second pip gpiod.
+    run python3 -m venv --system-site-packages venv
 fi
+run venv/bin/python -m pip install --upgrade pip
+run venv/bin/python -m pip install -r "$kiln_requirements"
+run venv/bin/python -m pip check
+run venv/bin/python scripts/initialize-settings.py
 
-sudo apt-get update
-sudo apt-get install -y git ca-certificates build-essential python3-dev python3-venv \
-    python3-libgpiod gpiod libgpiod-dev chrony avahi-daemon curl
-sudo systemctl enable --now chrony avahi-daemon
-
-getent group gpio >/dev/null || sudo groupadd --system gpio
-sudo usermod -aG gpio "$(id -un)"
-printf '%s\n' 'SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"' \
-    | sudo tee /etc/udev/rules.d/60-kiln-gpio.rules >/dev/null
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=gpio
-
-python3 -m venv --system-site-packages venv
-venv/bin/python -m pip install --upgrade pip
-kiln_requirements="$(mktemp)"
-trap 'rm -f "$kiln_requirements"' EXIT
-sed '/^[[:space:]]*RPi\.GPIO[[:space:]]*$/d' requirements.txt > "$kiln_requirements"
-venv/bin/python -m pip install -r "$kiln_requirements" 'Adafruit-Blinka==9.2.0' pytest
-venv/bin/python -m pip check
-
-printf '\n%s\n' \
-    'Setup complete. Log out and reconnect to activate GPIO group membership.' \
-    'Next: follow docs/INSTALL.md from step 4 for simulation and commissioning.' \
-    'The kiln controller has not been started; existing settings and firing data are unchanged.'
+printf '\n'
+printf '%s\n' \
+    'Next: bash scripts/run-simulation.sh' \
+    'Open http://<your-board-hostname-or-IP>:8081/picoreflow/index.html' \
+    'Stop the preview with Ctrl+C. See docs/INSTALL.md before commissioning hardware.' \
+    'No controller has been started or configured to start on boot.'
+if [ "$kiln_board" != simulation ]; then
+    echo 'Log out and reconnect before hardware checks to activate GPIO group membership.'
+fi

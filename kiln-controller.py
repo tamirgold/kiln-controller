@@ -71,10 +71,23 @@ signal.signal(signal.SIGTERM, stop_process)
 signal.signal(signal.SIGINT, stop_process)
 threading.excepthook = thread_failed
 
+def hardware_info():
+    profile = getattr(config, '_board_profile', None)
+    converters = [name for name, enabled in (
+        ('MAX31855', getattr(config, 'max31855', False)),
+        ('MAX31856', getattr(config, 'max31856', False))) if enabled]
+    return {
+        'board_profile': getattr(profile, 'name', None),
+        'board_label': getattr(profile, 'label', 'Kiln controller'),
+        'thermocouple_converter': converters[0] if len(converters) == 1 else None,
+        'simulate': bool(config.simulate),
+    }
+
 @app.get('/api/health')
 def health():
     return dict(oven.get_state(), controller_alive=oven.is_alive(),
-                temp_scale=config.temp_scale, automatic_restart_window=config.automatic_restart_window)
+                temp_scale=config.temp_scale, automatic_restart_window=config.automatic_restart_window,
+                **hardware_info())
 
 @app.route('/')
 def index():
@@ -390,7 +403,8 @@ def get_config():
         "automatic_restarts": config.automatic_restarts,
         "seek_start": config.seek_start,
         "sensor_time_wait": config.sensor_time_wait,
-        "currency_type": config.currency_type})    
+        "currency_type": config.currency_type,
+        **hardware_info()})
 
 def main():
     ip = "0.0.0.0"

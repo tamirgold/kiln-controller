@@ -35,7 +35,7 @@ off = config.gpio_heat_invert
 on = not off
 
 print("\nboard: %s" % (board.board_id))
-print("heater configured as config.gpio_heat = %s BCM pin\n" % (config.gpio_heat))
+print("heater configured as config.gpio_heat = %s (Blinka pin)\n" % (config.gpio_heat))
 print("heater output pin configured as invert = %r\n" % (config.gpio_heat_invert))
 
 while True:

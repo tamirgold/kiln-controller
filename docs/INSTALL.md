@@ -3,24 +3,53 @@
 This guide installs this repository on an Orange Pi Zero 2W running Debian 12
 (Bookworm), with Python 3.11 and the distro's GPIO bindings. Other Debian or
 Ubuntu images need compatible GPIO devices and should be checked before use.
-The current configuration uses the H618 board's H616-compatible pin mapping;
-it is not a generic Raspberry Pi installation.
+The Orange Pi profile uses the H618 board's H616-compatible pin mapping.
+For Raspberry Pi 3/4, follow the [separate Pi build](builds/raspberry-pi.md).
 
 For wiring, start with the [hardware guide and diagrams](HARDWARE.md): controller
 power, MAX31855 sensor, the DC-input SSR, and the three-phase power architecture.
 This page covers the software setup and commissioning sequence.
 
-Commands below run on the Orange Pi as `orangepi`. The service expects the
-repository at `/home/orangepi/kiln-controller`. If you use another account or
-directory, adjust the service before installing it.
+Commands below use account `orangepi` and `/home/orangepi/kiln-controller` as the
+existing example. Substitute your actual account/path. The service generator
+uses your current username and checkout path; inspect its output before use.
 
 Keep kiln mains isolated while configuring wiring and output polarity. The
-tracked defaults select real hardware, an active-high output, and a two-second
-control cycle. Incorrect polarity can request heat even while the controller
+tracked defaults still preserve the older real-hardware, active-high,
+two-second configuration. The new installer creates simulation-only settings
+with recovery off and a 30-second cycle for a fresh install. It preserves
+existing settings and does not choose your driver polarity. Incorrect polarity can request heat even while the controller
 says it is idle. Use an independent over-temperature cutoff and suitable mains
 protection; software cannot disconnect a failed-closed SSR.
 
+## 0. Prepare the board
+
+Use the [Orange Pi Zero 2W manufacturer's image/manual](http://www.orangepi.org/orangepiwiki/index.php/Orange_Pi_Zero_2W)
+to prepare a Debian 12 SD card for this exact board. A Raspberry Pi OS image is
+not an Orange Pi image. Configure Wi-Fi or a supported Ethernet adapter using
+that image's first-boot instructions; a local display/keyboard may be needed.
+Create or secure your user account and change any image-default password.
+
+From PowerShell/Windows Terminal or a macOS/Linux terminal, connect through SSH:
+
+```bash
+ssh orangepi@orangepizero2w.local
+```
+
+Substitute your actual account/hostname, or find the board's IP in your router.
+Confirm `cat /proc/device-tree/model`, `cat /etc/os-release`, and
+`python3 --version` show the intended Zero 2W, Debian 12 and Python 3.11.
+Keep the sensor/driver and kiln mains disconnected at this stage.
+
 ## 1. Install operating-system dependencies
+
+For a new build, you can clone as shown in step 2 and run
+`bash setup.sh --board orange-pi-zero-2w` to perform steps 1 and 3 and create safe
+initial settings. Install Git first if needed. The installer checks the actual
+board and never starts the controller. Plain `bash setup.sh` installs only the
+software simulator; hardware needs the explicit board argument.
+
+The equivalent manual system setup is:
 
 ```bash
 sudo apt update
@@ -45,7 +74,8 @@ gpiodetect
 chronyc tracking
 ```
 
-Your account must belong to `gpio`, and the GPIO devices must allow that group
+Your actual account must belong to `gpio` (substitute it for `orangepi` in the
+command above), and the GPIO devices must allow that group
 to read and write. Blinka selects the main GPIO chip using
 `/sys/class/gpio/gpiochip0/label`; an image that does not expose this interface
 needs investigation before proceeding.
@@ -56,36 +86,32 @@ do not resolve on your client, use the board's IP address instead.
 
 ## 2. Clone your repository
 
-The repository is private. With an SSH key already authorized for your GitHub
-account:
+The repository is public; cloning over HTTPS does not require an account:
 
 ```bash
 cd /home/orangepi
-git clone git@github.com:tamirgold/kiln-controller.git
+git clone https://github.com/tamirgold/kiln-controller.git
 cd kiln-controller
 ```
 
-Alternatively, clone `https://github.com/tamirgold/kiln-controller.git` using an
-authenticated Git credential helper. GitHub account passwords do not work for
-Git operations over HTTPS; do not put a token in the clone URL.
+Use your actual home directory if the account is not `orangepi`.
 
 In a fresh clone, `config.py`, `requirements.txt`, and `kiln-controller.py` are
 directly inside `kiln-controller/`.
 
 ## 3. Create the Python environment
 
-Use system site packages so the virtual environment can import the distro's
-`python3-libgpiod`. Exclude `RPi.GPIO`, which is for Raspberry Pi hardware.
+If you ran the board-specific setup script, this step is already done.
+For manual installation, use system site packages so the environment can import
+the distro's `python3-libgpiod`. The hardware requirements include the sensor and
+software-SPI packages but omit Raspberry Pi's `RPi.GPIO`.
 
 ```bash
 python3 -m venv --system-site-packages venv
 venv/bin/python -m pip install --upgrade pip
-kiln_requirements="$(mktemp)"
-sed '/^[[:space:]]*RPi\.GPIO[[:space:]]*$/d' requirements.txt > "$kiln_requirements"
-venv/bin/python -m pip install -r "$kiln_requirements" \
-  'Adafruit-Blinka==9.2.0' pytest
-rm "$kiln_requirements"
+venv/bin/python -m pip install -r requirements-hardware.txt
 venv/bin/python -m pip check
+venv/bin/python scripts/initialize-settings.py
 ```
 
 Blinka 9.2.0 is a recorded working version for this installation, not a complete
@@ -97,7 +123,7 @@ second pip `gpiod` package that masks them.
 Verify imports and the selected pins:
 
 ```bash
-venv/bin/python - <<'PY'
+KILN_BOARD=orange-pi-zero-2w KILN_SIMULATE=0 venv/bin/python - <<'PY'
 import config
 import gpiod
 from importlib.metadata import version
@@ -112,20 +138,15 @@ PY
 
 The GPIO offsets should be 230, 232, 229, 231, and 272, respectively; the chip
 number can depend on the kernel. This check imports the configuration without
-starting a kiln or requesting heater output. Imports still open GPIO chip
-devices, including in simulation, so the current simulator requires this
-compatible Linux environment.
+starting a kiln or requesting heater output. This explicit real-hardware check
+opens GPIO devices. Simulation now skips hardware imports and needs no GPIO.
 
 ## 4. Preview the interface in simulation
 
-Start a preview directly from the shell with a separate recovery file and port:
+Start the preview with isolated settings/recovery and a separate port:
 
 ```bash
-mkdir -p storage/preview
-KILN_SIMULATE=1 \
-KILN_STATE_FILE="$PWD/storage/preview/state.json" \
-KILN_PORT=8082 \
-venv/bin/python kiln-controller.py
+KILN_BOARD=orange-pi-zero-2w bash scripts/run-simulation.sh --port 8082
 ```
 
 Open `http://orangepizero2w.local:8082/picoreflow/index.html`, substituting the
@@ -134,12 +155,14 @@ identifies simulation before starting a sample program. Stop the simulated
 program, then press Ctrl+C in the terminal when finished.
 
 Simulated firing records go to `storage/simulated-firings/`. The separate
-preview state file avoids overwriting the normal recovery record. The three
-environment overrides also lock their corresponding Settings fields; use the
-installed service for permanent configuration changes.
+preview settings and state are under `storage/preview/orange-pi-zero-2w/`, so
+experiments do not overwrite the deployment settings/recovery record. The
+preview still shares saved programs and the simulated archive in this clone.
+Environment overrides lock simulation mode, port and recovery path; use a
+normal commissioning session or installed service for permanent settings.
 
-The service's startup and shutdown hooks access the heater GPIO even when
-simulation is selected. Review polarity before installing the service.
+The preview and current `heater-off.py` skip GPIO entirely in simulation.
+Simulation cannot verify physical sensing, polarity or boot/power-loss behavior.
 
 ## 5. Set local hardware configuration
 
@@ -148,10 +171,13 @@ The [Settings page](../public/settings.html) manages validated overrides in
 `settings.json`; saved edits remain separate in `settings.pending.json` until
 applied. Both files are intentionally excluded from Git.
 
-For a **new installation with the documented active-low relay wiring only**,
-create `settings.json` with this initial content. **Do not overwrite an
-existing settings file.** Use a different polarity or cycle if your driver
-requires it.
+The installer creates a partial `settings.json` only if none exists. To review
+deployment settings, launch `KILN_BOARD=orange-pi-zero-2w venv/bin/python kiln-controller.py`
+after stopping the preview. Fresh settings still select simulation. Set the
+driver polarity in its Settings page, save/review/apply, and relaunch after the
+terminal process exits. For the **documented active-low relay wiring only**, the
+resulting essential values are illustrated below. **Do not overwrite an
+existing settings file.** Another driver may require a different polarity/cycle.
 
 ```json
 {
@@ -213,21 +239,32 @@ existing service installation, use `sudo systemctl stop kiln-controller` only
 after the kiln is idle. Then run:
 
 ```bash
-timeout 15 venv/bin/python -u test-thermocouple.py
+KILN_BOARD=orange-pi-zero-2w KILN_SIMULATE=0 \
+  timeout 15 venv/bin/python -u test-thermocouple.py
 ```
 
-This reads the physical sensor even if simulation is enabled. Do not run
+The explicit mode override reads the physical sensor even if saved simulation
+is enabled. Exit status 124 when the 15-second timeout expires is expected. Do not run
 multiple processes that claim the same GPIO lines. `test-output.py` deliberately
 toggles the heater request and is not a routine installation check.
 
 ## 6. Install the service and commission real operation
 
-After verifying wiring, polarity, and the configured off level, inspect
-[kiln-controller.service](../lib/init/kiln-controller.service). Adjust its
-account and paths if they differ from this guide, then install it:
+After verifying wiring, polarity, and the configured off level, generate a unit
+using the current account/path. This creates a file only; inspect it first:
 
 ```bash
-sudo install -m 0644 lib/init/kiln-controller.service \
+mkdir -p storage/installation
+python3 scripts/create-service.py --board orange-pi-zero-2w --mode hardware \
+  --commissioned --output storage/installation/kiln-controller.service
+cat storage/installation/kiln-controller.service
+```
+
+Stop any terminal controller before installing the service. Review `User`,
+`WorkingDirectory`, command paths and `KILN_BOARD`, then:
+
+```bash
+sudo install -m 0644 storage/installation/kiln-controller.service \
   /etc/systemd/system/kiln-controller.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now kiln-controller
@@ -235,9 +272,11 @@ sudo systemctl status kiln-controller --no-pager
 curl http://127.0.0.1:8081/api/health
 ```
 
-The service uses group `gpio`, attempts to set the configured off level before
-startup and after exit, and restarts failures after five seconds. With the
-example local settings above, it initially runs in simulation.
+The generated hardware-capable service uses group `gpio`, attempts to set the
+configured off level before startup/after exit in real mode, and restarts
+failures after five seconds. It follows local Simulation settings. It initially
+runs simulated when the fresh settings above remain in effect. The old static
+unit is retained as a legacy Orange Pi example; new builds use the generator.
 
 Open `http://orangepizero2w.local:8081/picoreflow/settings.html`. Review Sensor &
 wiring, Firing behavior, PID control, Protection overrides, and Electricity &
@@ -276,17 +315,18 @@ journalctl -u kiln-controller -n 100 --no-pager
 curl http://127.0.0.1:8081/api/health
 ```
 
-Run the test suite on the configured Linux environment, using a fresh settings
+Install development requirements, then run tests using a fresh settings
 path so deployment overrides do not change the defaults expected by the tests:
 
 ```bash
+venv/bin/python -m pip install -r requirements-dev.txt
 kiln_test_dir="$(mktemp -d)"
-KILN_SIMULATE=1 KILN_SETTINGS_FILE="$kiln_test_dir/settings.json" \
+KILN_BOARD=orange-pi-zero-2w KILN_SIMULATE=1 KILN_SETTINGS_FILE="$kiln_test_dir/settings.json" \
   venv/bin/python -m pytest -q Test
 ```
 
-The suite uses simulated or mocked heater paths, but imports still need the
-board's Python/GPIO environment. Passing tests does not verify physical wiring,
+The suite uses simulated or mocked heater paths and requires no physical GPIO.
+Passing tests does not verify physical wiring,
 temperature calibration, relay behavior, or PID tuning.
 
 ## 8. Back up and update
@@ -306,9 +346,13 @@ git pull --ff-only
 ```
 
 Resolve any local source changes deliberately if Git cannot fast-forward.
-Repeat the filtered dependency installation from step 3 if requirements have
-changed, then run the tests from step 7. If the service file changed, review and
-reinstall it using step 6. Finally:
+Repeat the hardware dependency installation from step 3 if requirements have
+changed, then run the tests from step 7. If the service definition changed,
+generate a **new draft filename**, such as
+`storage/installation/kiln-controller-updated.service`, with the step 6 command's
+`--output` argument. The generator refuses to overwrite an old draft. Review
+the new draft, install that new file to `/etc/systemd/system/kiln-controller.service`,
+and run `sudo systemctl daemon-reload`. Finally:
 
 ```bash
 sudo systemctl start kiln-controller

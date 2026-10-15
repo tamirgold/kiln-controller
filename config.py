@@ -1,11 +1,12 @@
 import logging
 import os
-# The Zero 2W uses the same GPIO controller/offsets as H616. Blinka does
-# not yet provide a Zero 2W board module; use the verified common pins.
-os.environ.setdefault('BLINKA_FORCEBOARD', 'ORANGE_PI_ZERO_2')
-os.environ.setdefault('BLINKA_FORCECHIP', 'H616')
-from digitalio import DigitalInOut
-import busio
+from lib.board_profiles import get_profile as _get_profile
+from lib.board_profiles import initialize_hardware as _initialize_hardware
+
+# Explicitly set KILN_BOARD=raspberry-pi or orange-pi-zero-2w on new installs.
+# Omitting it preserves this fork's Orange Pi wiring. Resolve the profile
+# before importing Blinka, and wait for saved settings before opening GPIO.
+_board_profile = _get_profile()
 
 ########################################################################
 #
@@ -30,11 +31,11 @@ currency_type = '₪'
 
 ########################################################################
 #
-# Hardware Setup (uses BCM Pin Numbering)
+# Hardware setup (pin names follow the selected KILN_BOARD profile)
 #
 # kiln-controller.py uses SPI interface from the blinka library to read
 # temperature data from the adafruit-31855 or adafruit-31856.
-# Blinka supports many different boards. I've only tested raspberry pi.
+# See docs/supported-boards.md for the profile validation status.
 #
 # First you must decide whether to use hardware spi or software spi.
 # 
@@ -61,9 +62,9 @@ currency_type = '₪'
 #    SPI0_MISO = BCM pin 9  = D0 on the adafruit-31855
 #   
 # plus a GPIO output to connect to CS. You can use any GPIO pin you want.
-# I chose gpio pin 5:
+# The Raspberry Pi profile uses gpio pin 8:
 #
-#    GPIO5    = BCM pin 5   = CS on the adafruit-31855
+#    GPIO8    = BCM pin 8 = physical pin 24 = CS on the adafruit-31855
 #
 # Note that NO pins are configured in this file for hardware spi
 
@@ -84,18 +85,15 @@ currency_type = '₪'
 # Output to control the relay
 #######################################
 # A single GPIO pin is used to control a relay which controls the kiln.
-# I use GPIO pin 23.
-
-try:
-    import board
-    spi_sclk  = board.PH6    # physical 23, GPIO 230, MAX31855 CLK
-    spi_miso  = board.MISO   # physical 21, PH8 / GPIO 232, MAX31855 DO
-    spi_cs    = board.PH5    # physical 24, GPIO 229, MAX31855 CS
-    spi_mosi  = board.MOSI  # physical 19, PH7; leave unconnected
-    gpio_heat = board.PI16  # physical 37, GPIO 272, SSR driver signal
-    gpio_heat_invert = False #invert the output state
-except (NotImplementedError,AttributeError):
-    print("not running on blinka recognized board, probably a simulation")
+# Defaults below use physical pins 23 / 21 / 24 / 19 / 37 on both profiles.
+# The boards have different GPIO names; their headers are not interchangeable.
+# Pi names may be written as D11 or BCM11. Orange Pi uses PH6, PI16, etc.
+spi_sclk  = _board_profile.defaults['spi_sclk']
+spi_miso  = _board_profile.defaults['spi_miso']
+spi_cs    = _board_profile.defaults['spi_cs']
+spi_mosi  = _board_profile.defaults['spi_mosi']  # leave unconnected for MAX31855
+gpio_heat = _board_profile.defaults['gpio_heat']
+gpio_heat_invert = False # invert the output state only for an active-low driver
 
 #######################################
 ### Thermocouple breakout boards
@@ -105,9 +103,8 @@ except (NotImplementedError,AttributeError):
 #   max31856 - supports many thermocouples
 max31855 = 1
 max31856 = 0
-# uncomment these two lines if using MAX-31856
-import adafruit_max31856
-thermocouple_type = adafruit_max31856.ThermocoupleType.K
+# MAX31856 type name. The driver enum is resolved only for real hardware.
+thermocouple_type = 'K'
 
 # here are the possible max-31856 thermocouple types
 #   ThermocoupleType.B
@@ -296,3 +293,4 @@ throttle_percent = 100
 # explicitly applied while the kiln is idle.
 from lib.settings_store import load_overrides as _load_settings_overrides
 _load_settings_overrides(globals())
+_initialize_hardware(globals())

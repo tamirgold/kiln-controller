@@ -1,0 +1,8 @@
+-r requirements.txt
+
+# Recorded Orange Pi Zero 2W / Debian 12 GPIO stack. Use distro libgpiod.
+# Raspberry Pi 3/4 support still needs physical commissioning on your build.
+Adafruit-Blinka==9.2.0
+adafruit-circuitpython-max31855
+adafruit-circuitpython-max31856
+adafruit-circuitpython-bitbangio
