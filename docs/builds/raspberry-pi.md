@@ -199,14 +199,16 @@ Allow for the SSR reference's **40 mA maximum input current**, the module's own
 consumption, and all Pi/accessory loads when checking the supply and wiring
 budget. Do not connect an additional powered 5 V supply to the header.
 
-[![Generated conceptual Raspberry Pi, sensor, MOSFET switch and SSR assembly using Pi header 5 V](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
+[![Generated conceptual Raspberry Pi, sensor, MOSFET switch and SSR assembly in one larger divided enclosure, with the thermocouple probe outside, using Pi header 5 V](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
 
-*Generated assembly with a wiring overlay. Use the pin and connection tables as the
+*Generated assembly with a wiring overlay. All four electronic components share
+one larger enclosure, with a divider beside the SSR. The thermocouple probe is
+outside, with its cable routed through a gland. Use the pin and connection tables as the
 electrical reference; actual module layouts vary. The SSR's AC load terminals
 are shown unwired.*
 
 **1** Raspberry Pi · **2** MAX31855 · **3** MOSFET switch module ·
-**4** SSR and heatsink.
+**4** SSR and heatsink · **5** K-type thermocouple.
 
 | From | To |
 | --- | --- |
