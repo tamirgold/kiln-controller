@@ -110,7 +110,7 @@ same network. Use the Pi's IP if the name does not resolve.
 
 **Check:** the page identifies a simulated kiln. Try a sample schedule to learn
 the controls. The preview does not use real GPIO; successful simulation does not
-prove the sensor or relay is connected correctly. End the simulated firing and
+prove the sensor or output driver is connected correctly. End the simulated firing and
 press Ctrl+C in the SSH terminal before continuing.
 
 **If installation fails:** keep the first error, verify your OS/model and review
@@ -170,43 +170,61 @@ Module markings govern: on Adafruit breakouts **3Vo is an output**, not VIN.
 
 ### Heat-request output
 
+This example uses a **MOSFET Field-Effect Transistor Trigger Switch Drive Module
+PWM** that must meet these requirements: **active-high, 3.3 V-compatible trigger,
+nominal 5 V supply, and low-side switching**. Its DC+ supply terminal connects
+internally to OUT+; it switches OUT− to DC− when triggered. The generic product
+name does not establish these properties. Check the exact module's schematic,
+input current and terminal markings before following this example; an input
+pulled up to 5 V is unsuitable for direct Pi GPIO connection.
+
 | Physical Pi pin | GPIO / software name | Connect to |
 | ---: | --- | --- |
-| 37 | BCM26 / `D26` | Compatible 3.3 V driver input |
-| 39 | Ground | Driver input reference where required by its schematic |
+| 2 | +5 V supply rail | MOSFET module DC+ |
+| 14 | Ground | MOSFET module DC− |
+| 37 | BCM26 / `D26`, 3.3 V logic | MOSFET module TRIG / PWM input |
+| 39 | Ground | Module logic GND, if provided separately |
 
-The output must go through a verified compatible interface. Do not connect the
-documented up-to-40 mA SSR input directly to GPIO. The [parts guide](../PARTS.md#choose-the-output-interface-deliberately)
-explains what to establish before buying a driver.
+The module's power and logic grounds share the Pi ground in this example.
+Use its schematic to identify them; terminal positions and labels vary.
+**Physical pin 2 supplies power; physical pin 37 carries only a 3.3 V signal.**
+Never connect 5 V to a GPIO signal pin. Do not connect the documented
+up-to-40 mA SSR input directly to GPIO. The
+[parts guide](../PARTS.md#choose-the-output-interface-deliberately) lists the
+module requirements.
 
-For a **3.3 V-compatible active-low relay** matching the
-[documented example](../HARDWARE.md#4-connect-the-relay-and-ssr-input), connect
-**physical 37 / BCM26 to IN1** and **physical 39 to relay input logic GND**.
-HIGH means no heat request; LOW requests heat. Its dry contacts switch a
-separate regulated 5 V supply into the **3–32 VDC SSR control input**:
+The Pi's normal USB power supply also powers this **3–32 VDC SSR control input**
+through the header and MOSFET module. No separate SSR-control supply is used.
+Allow for the SSR reference's **40 mA maximum input current**, the module's own
+consumption, and all Pi/accessory loads when checking the supply and wiring
+budget. Do not connect an additional powered 5 V supply to the header.
 
-[![Generated conceptual Raspberry Pi, sensor, relay and SSR low-voltage assembly](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
+[![Generated conceptual Raspberry Pi, sensor, MOSFET switch and SSR assembly using Pi header 5 V](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)](../images/hardware/raspberry-pi-wired-assembly-generated.jpg)
 
 *Generated assembly with a wiring overlay. Use the pin and connection tables as the
 electrical reference; actual module layouts vary. The SSR's AC load terminals
 are shown unwired.*
 
-**1** Raspberry Pi · **2** MAX31855 · **3** Relay/driver ·
-**4** SSR and heatsink · **5** Regulated 5 V SSR-control supply.
+**1** Raspberry Pi · **2** MAX31855 · **3** MOSFET switch module ·
+**4** SSR and heatsink.
 
 | From | To |
 | --- | --- |
-| Pi physical 17 / 3.3 V, through an optional 10 kΩ pull-up if required by the module | Relay IN1 |
-| Separate regulated control supply +5 V | Relay COM |
-| Relay NO (normally open) | SSR DC control input + |
-| Control supply 0 V | SSR DC control input − |
-| Relay NC (normally closed) | Leave unused |
+| Module OUT+ (connected internally to DC+) | SSR DC control input + |
+| Module OUT− (switched return) | SSR DC control input − |
+| Module TRIG / PWM input, through a suitable 10 kΩ pull-down resistor | Module logic GND |
 
-Power the relay's logic and coil according to its **exact module schematic**;
-VCC/JD-VCC connections and jumper positions are module-specific. The SSR-control
-supply's 0 V stays separate from Pi logic GND in this dry-contact example.
-The optional pull-up biases IN1 off only while the Pi's 3.3 V rail exists.
-Relay contacts carry the SSR's low-voltage control current, not kiln mains.
+**Do not connect SSR input − directly to Pi GND:** that would bypass this
+low-side switch. The current path when ON is Pi +5 V → DC+ / OUT+ → SSR input +
+→ SSR input − → OUT− → the module's MOSFET → DC− / Pi GND. Only the SSR's DC
+control terminals connect to this circuit; its AC load terminals remain separate.
+
+The 10 kΩ pull-down holds TRIG low when GPIO is floating; verify it suits the
+module's input circuit. It cannot override an actively driven HIGH signal.
+For this active-high module, **LOW means no heat request and HIGH requests heat**;
+leave **Invert SSR control signal off** (`gpio_heat_invert = False`).
+The word “PWM” in the module's name does not call for high-frequency PWM here:
+the controller uses timed ON/OFF heat requests for the AC SSR.
 
 Mount the finished low-voltage assembly securely, with labeled cables, strain
 relief and separation from power wiring. Do not treat loose bench jumper wires
@@ -238,11 +256,15 @@ KILN_BOARD=raspberry-pi venv/bin/python kiln-controller.py
 Review **Settings → Sensor & wiring**. Match every pin to the table and set
 **Invert SSR control signal** according to the actual driver:
 
-- Active-high: leave it off; LOW is the no-heat level.
-- Active-low: enable it; HIGH is the no-heat level.
+- The active-high MOSFET module described here: leave it **off**; LOW is the
+  no-heat level (`gpio_heat_invert = False`).
+- A different, verified active-low interface: enable it; HIGH is the no-heat
+  level. Its wiring must follow its own schematic.
 
-Review the control cycle for the driver. The initial 30-second cycle is intended
-to avoid rapid mechanical-relay switching, not to certify a particular relay.
+Review the control cycle for the driver and SSR. The installer retains a
+conservative 30-second initial cycle; this does not require a mechanical relay.
+Choose any later timing change for the actual SSR and kiln during commissioning;
+do not configure high-frequency PWM merely because the MOSFET board accepts it.
 Leave recovery and all protection overrides disabled during commissioning.
 Save, review, and apply while idle. A terminal-launched process exits on apply;
 rerun the same command to load the saved values.
@@ -253,8 +275,11 @@ Before allowing real heat, verify with mains isolated:
    no heat and the driver/SSR input agrees.
 2. Start/stop a suitable bench test only as part of a planned output check;
    establish which electrical levels turn the request on and off.
-3. Confirm the output is off during boot, shutdown and controller power loss
-   **while the driver/SSR supply stays energized**.
+3. Confirm the output is off during boot, process exit, shutdown and controller
+   power loss. **The Pi's 5 V header rail can remain energized after OS shutdown**:
+   check the SSR input while that rail is still present, and again when USB
+   power is removed. A pull-down helps only when the GPIO is not driving HIGH;
+   neither it nor a stopped process proves a faulted controller will switch off.
 4. Confirm a disconnected/faulted sensor prevents heating and produces a fault.
 
 The service and software OFF calls are useful checks, not a substitute for
