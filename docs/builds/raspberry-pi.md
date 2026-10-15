@@ -28,6 +28,16 @@ You need the [listed parts and tools](../PARTS.md), a computer with an SD reader
 and access to the same local network as the Pi. Start with the board, SD card and
 board power supply only; leave the driver and kiln power disconnected.
 
+[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](../images/hardware/raspberry-pi-parts-generated.jpg)](../images/hardware/raspberry-pi-parts-generated.jpg)
+
+*Generated illustration of the board-preparation and sensor parts. Component
+appearance varies; use the parts table and your module's markings. The output
+driver and kiln power components are selected separately.*
+
+**Parts shown:** **1** Raspberry Pi; **2** microSD card and reader;
+**3** USB-C power supply; **4** MAX31855 sensor converter; **5** K-type
+thermocouple; **6** jumper leads; **7** mounting spacers.
+
 1. Install [Raspberry Pi Imager](https://www.raspberrypi.com/software/) on your
    computer. Select your exact Pi model. For the **Bookworm 64-bit Lite** image
    used by this guide, download
@@ -109,9 +119,31 @@ the Pi as an Orange Pi. GPIO imports use the real board identity.
 
 ## 3. Connect the low-voltage parts
 
-Disconnect all controller power before wiring. Locate **pin 1 from the board's
-marking**. The diagram is a schematic and pin locator; it is not a photograph of
-a verified assembly. A board's orientation on your bench can differ.
+Disconnect all controller power before assembly or wiring.
+
+[![Generated illustration of Raspberry Pi and sensor mounting before wiring](../images/hardware/raspberry-pi-assembly-generated.jpg)](../images/hardware/raspberry-pi-assembly-generated.jpg)
+
+*Generated assembly illustration: arrange and secure the low-voltage parts
+before wiring. The output-interface space is left open because its exact module
+determines its mounting and connections. Follow the pin table below for wiring.*
+
+**1** Raspberry Pi · **2** Sensor converter · **3** Space for the chosen output interface.
+
+1. Test-fit the Pi so its power, network and USB ports and microSD slot remain
+   accessible. Allow the cooling clearance required by your board and enclosure.
+2. Secure the Pi and converter through their own mounting holes on correctly
+   sized insulated standoffs. Use the actual board holes, not the generated
+   image, as the drilling template. Keep their
+   undersides clear of the mounting plate and loose metal, and leave the headers
+   and sensor terminals accessible. Position the converter away from the Pi's heat.
+3. Plan strain-relieved cable entries and leave space for the chosen output
+   interface. Route the thermocouple cable separately from power wiring; keep
+   everything unconnected until you have checked each module's markings.
+
+Locate **pin 1 from the board's marking**. Use the schematic and pin tables below
+for every electrical connection; the generated illustration shows placement
+only. The diagram is a schematic and pin locator; it is not a photograph of a
+verified assembly. A board's orientation on your bench can differ.
 
 [![Raspberry Pi 3/4 physical-pin locator and MAX31855 sensor/output connections](../images/hardware/raspberry-pi-wiring.svg)](../images/hardware/raspberry-pi-wiring.svg)
 
