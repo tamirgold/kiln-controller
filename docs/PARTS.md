@@ -9,6 +9,19 @@ profile still needs a physical build report. Prices and availability vary.
 
 ## Low-voltage controller
 
+[![Generated illustration of separate Raspberry Pi 4 preparation and sensor parts](images/hardware/raspberry-pi-parts-generated.png)](images/hardware/raspberry-pi-parts-generated.png)
+
+*Generated illustration of the board-preparation and sensor parts. Component
+appearance varies; use the parts table and your module's markings. The output
+driver and kiln power components are selected separately.*
+
+**Parts shown:** **1** Raspberry Pi; **2** microSD card and reader;
+**3** USB-C power supply; **4** MAX31855 sensor converter; **5** K-type
+thermocouple; **6** jumper leads; **7** mounting spacers.
+
+See the [Raspberry Pi build guide](builds/raspberry-pi.md) for SD-card preparation,
+mounting and the exact wiring diagram.
+
 | Qty | Part | Buying and assembly notes |
 | ---: | --- | --- |
 | 1 | Raspberry Pi 4B or supported Pi 3 model | Proposed Pi route; 40-pin header. Any normal memory variant is ample for the interface, but record the exact model when validating. Pi 5/400/Compute Modules/Zero are not covered by this profile. See [board status](supported-boards.md). |
