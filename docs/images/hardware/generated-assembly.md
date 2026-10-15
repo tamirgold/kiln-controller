@@ -19,7 +19,9 @@ The current wired overview uses the Raspberry Pi's 5 V header supply and a
 generic active-high, 3.3 V-compatible low-side MOSFET trigger switch module.
 It has no separate SSR-control supply or mechanical relay. The exact purchased
 module must meet the build guide's requirements; the image is not a verified
-product photograph. Earlier relay-version prompts below are retained as history.
+product photograph. All four modules share one larger enclosure, with the
+thermocouple probe outside via a cable gland. Earlier layouts and prompts
+below are retained as history.
 
 Use the [build guide's pin tables and schematic](../../builds/raspberry-pi.md#3-connect-the-low-voltage-parts)
 for electrical connections. Component appearance and wire colors in generated
@@ -91,7 +93,7 @@ Make ONLY these corrections:
 
 Do not draw any new interconnecting wires. Do not add extra components, labels, arrows or current ratings. Do not change the positions or enlarge the parts. Preserve realistic small circuit boards, correct natural shadows and readable original two callouts. The actual connections will be added separately from a verified connection map.
 
-## Current Pi-powered MOSFET overview
+## Earlier Pi-powered MOSFET layout (superseded)
 
 Requested 15 October 2026: use the Raspberry Pi's 5 V supply and replace the
 mechanical relay with a MOSFET trigger switch module. The edit used the earlier
@@ -125,3 +127,52 @@ Make these two changes:
 2. Completely remove the external black 5 V supply block from the lower right, including its input cable and any labels. Restore the natural bare wood workbench in its place. The Pi's USB power lead remains the only incoming control-power cable. Preserve the blank area for a later explanatory wiring legend.
 
 Do NOT draw any interconnecting wires. Keep the Pi header, sensor signal contacts, MOSFET terminals and SSR DC input terminals empty for the later accurate wiring overlay. Keep the two loose thermocouple lead ends resting below the sensor, as in the input. Keep the nearby text 'AC load wiring omitted'. Preserve all unrelated parts and their exact positions as closely as possible; do not change the Pi or sensor connector counts. There must be no mechanical relay, no external low-voltage supply block, no relay pigtail, and no stray old wiring or labels. This is a generated conceptual illustration, not a photograph or pin-position reference for a tested build.
+
+## Current larger-enclosure layout
+
+Requested 15 October 2026: put the Raspberry Pi, MAX31855, MOSFET module and
+SSR/heatsink together inside one larger enclosure, and show the thermocouple
+outside it. The generated edit enlarges the shared box, adds an internal divider
+beside the SSR compartment and depicts the probe lead through a cable gland in
+the low-voltage compartment. The Pi-powered active-high MOSFET connection map
+is unchanged. The SSR's AC load terminals remain unwired.
+
+The previous unannotated MOSFET component base was the edit target, supplied
+as a JPEG. The approved imagegen API/CLI fallback used `gpt-image-2`, medium
+quality and 1536 × 1024 output. A second targeted edit completed the continuous
+internal thermocouple cable and its two sensor-terminal connections without
+changing the layout. Connection lines and numbered markers were
+added locally, including marker 5 for the external K-type thermocouple.
+The published JPEG is 1536 × 1184; the generated base and annotated PNG
+remain in the workspace output. The divider, air space and vents illustrate
+layout intent, not a verified thermal or electrical enclosure design.
+Pin tables, actual module documentation and physical commissioning remain
+the assembly references.
+
+### Larger-enclosure edit prompt
+
+Use case: precise-object-edit.
+Asset type: photorealistic-style generated component layout for a beginner Raspberry Pi kiln-controller assembly guide.
+Image 1 is the edit target and component reference: Raspberry Pi 4, MAX31855, MOSFET switch module, and three-phase DC-input SSR on its aluminium heatsink. Keep these same four recognizable components, their correct connector counts and the warm natural workbench lighting. This edit changes the enclosure and probe placement; it must not change the type of driver or introduce another power supply.
+
+Primary request: put ALL four components together INSIDE ONE larger open rectangular enclosure, and show the thermocouple probe OUTSIDE that enclosure. Recompose as needed, with a slightly higher viewing angle so all components and terminals remain visible. Use a generously sized light-gray powder-coated metal enclosure with a mounting backplate. The Raspberry Pi stays in the left area, the blue MAX31855 above the middle-left area, and the blue MOSFET module below it. Put the complete SSR AND its large finned heatsink in the right-hand area, fully within the perimeter walls. Leave clear air space around the heatsink, visible louvers in the right-hand outer wall, and a simple internal insulating divider between the SSR power compartment and the Pi/sensor compartment. This is ONE common outer enclosure, not two separate boxes. Mount the small boards through their real mounting holes on short standoffs. Keep the outer enclosure completely visible and leave workbench space below it for the external thermocouple. The lid is removed and out of frame.
+
+Move the thermocouple cable gland to the FRONT wall of the low-voltage compartment, well away from the SSR compartment. A continuous braided thermocouple lead must pass through that actual gland to a clearly visible long ceramic-sheathed K-type kiln thermocouple lying OUTSIDE the box on the foreground workbench. Show its slender white ceramic probe, metal transition ferrule and the attached braided lead as ONE coherent probe assembly. Inside the box, the cable runs toward the MAX31855 and splits into exactly two short insulated loose ends resting beside the sensor's two green thermocouple terminals. Do not use a bare wire loop as the probe and do not put the thermocouple's sensing tip inside the electronics box.
+
+This is an UNWIRED COMPONENT BASE for a separate accurate wiring overlay. Do not draw any Pi-to-module or module-to-SSR interconnection wires. Keep all module electrical terminals empty and visible. Keep ONLY the Pi's black USB-C incoming power cable plugged into its actual USB-C socket, and the continuous thermocouple cable/probe described above. Remove the old gland in the previous small-box right wall; do not let the probe cable enter through the SSR compartment. No separate 5 V supply, no mechanical relay, no resistor yet, no old paper labels or caption 'AC load wiring omitted' on the workbench.
+
+Component invariants:
+- Raspberry Pi: one recognizable Pi 4 with its 40-pin GPIO header accessible and correct USB-C power socket, not a cable in the audio socket.
+- MAX31855: one small blue converter with exactly TWO green thermocouple screw terminals and five distinct accessible signal contact positions. No extra sensor board.
+- MOSFET module: one small blue board with two FLAT black MOSFET packages, not a cube relay. Two supply terminals marked DC+ and DC-, two separate logic positions TRIG and GND, and two output terminals OUT+ and OUT-. Exactly six connection positions, no NC or COM terminals. Keep input, supply and output connections clearly separated.
+- Three-phase SSR: exactly THREE large AC studs across its upper edge and THREE across its lower edge, SIX AC terminals TOTAL, with transparent terminal guards. Two separate small DC control-input terminals marked + and - remain accessible. All six AC terminals stay UNWIRED. Preserve the complete finned heatsink beneath it. No current rating, branding, certification marks or mains wiring.
+
+Use realistic materials, coherent perspective and uncluttered assembly. Avoid decorative tools, floating fasteners, spare boards, extra power blocks, captions, diagrams, number markers or arrows. The generated image is a conceptual arrangement, not a tested thermal or electrical enclosure design. Wires and explanatory labels will be added separately afterward.
+
+### Internal probe-cable correction prompt
+
+Use case: precise-object-edit. Change ONLY the internal thermocouple cable in Image 1; preserve every component's position, the large common enclosure and divider, SSR/heatsink, external white ceramic probe and the entire external braided cable exactly.
+
+The external probe already connects through the front-wall gland correctly. Complete the SAME continuous braided cable INSIDE the low-voltage compartment: from the gland, route it across clear backplate to the left of the MOSFET module, then through the narrow clear gap ABOVE the MOSFET module and BELOW the Raspberry Pi, then up toward the bottom of the MAX31855 sensor board. It must not pass beneath or across any PCB and must not enter the SSR compartment. End the braid immediately below the sensor's two-position green thermocouple terminal block. From the braid, exactly TWO short insulated conductors enter the TWO thermocouple terminals, one per terminal. Remove the existing disconnected loose wire tails by the sensor and the dead-ended cable behind the MOSFET. Show one continuous connected probe/cable assembly from the external sensing tip to the sensor input. No loose or exposed bare wire ends.
+
+Keep this the only electrical cable connection in the base image except the existing Pi USB-C power lead. Do not add GPIO wires, MOSFET power/trigger/output wires, an external supply, a relay, labels, markers or any other objects. The six SSR AC terminals remain unwired. Keep all dimensions, camera, light, materials and other component geometry unchanged. This is a targeted cable-continuity correction, not a new composition.
